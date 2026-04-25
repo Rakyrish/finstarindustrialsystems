@@ -1,0 +1,81 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --color-primary: #0f4c81;
+    --color-primary-dark: #0a3560;
+    --color-primary-light: #1a6cb8;
+    --color-accent: #f97316;
+    --color-accent-dark: #ea6c0c;
+    --color-surface: #f8fafc;
+    --color-text: #0f172a;
+    --color-text-muted: #64748b;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    font-family: var(--font-inter, system-ui, sans-serif);
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: linear-gradient(135deg, #0f4c81 0%, #1a6cb8 50%, #0d5fa0 100%);
+  }
+
+  .gradient-hero {
+    background: linear-gradient(
+      135deg,
+      rgba(15, 76, 129, 0.97) 0%,
+      rgba(10, 53, 96, 0.95) 60%,
+      rgba(15, 76, 129, 0.9) 100%
+    );
+  }
+
+  .text-gradient {
+    background: linear-gradient(135deg, #f97316, #fbbf24);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 ease-in-out hover:-translate-y-1 hover:shadow-xl;
+  }
+
+  .section-padding {
+    @apply py-16 px-4 sm:px-6 lg:px-8;
+  }
+
+  .container-max {
+    @apply max-w-7xl mx-auto;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 text-white font-semibold rounded-lg 
+    hover:bg-orange-600 active:bg-orange-700 transition-all duration-200 shadow-md hover:shadow-lg
+    focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-blue-900 font-semibold rounded-lg 
+    border-2 border-white hover:bg-blue-50 active:bg-blue-100 transition-all duration-200 shadow-md hover:shadow-lg
+    focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2;
+  }
+
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-transparent text-blue-800 font-semibold rounded-lg 
+    border-2 border-blue-800 hover:bg-blue-800 hover:text-white transition-all duration-200
+    focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-2;
+  }
+}
