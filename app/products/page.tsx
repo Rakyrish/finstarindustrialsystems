@@ -5,14 +5,29 @@ import ProductsClient from "./ProductsClient";
 import { LoadingPage } from "@/components/LoadingSpinner";
 
 export const metadata: Metadata = {
-  title: "Products",
+  title: "Industrial Equipment Products – Refrigeration, HVAC, Boilers & Cold Rooms",
   description:
-    "Browse Finstar's full range of industrial refrigeration systems, HVAC, boilers, cold rooms, and fittings. Find the right solution for your business.",
+    "Browse Finstar's complete range of industrial refrigeration systems, HVAC units, steam boilers, cold rooms, and industrial fittings. Quality-certified equipment available for Kenya and East Africa.",
+  alternates: { canonical: "/products" },
+  openGraph: {
+    title: "Industrial Products | Refrigeration, HVAC, Boilers & Cold Rooms – Finstar",
+    description:
+      "Shop industrial-grade refrigeration, HVAC, boilers, cold rooms, and fittings. Trusted by 500+ businesses across East Africa.",
+    url: "https://finstarindustrial.com/products",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Finstar Industrial Products" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Industrial Products | Finstar Industrial Systems",
+    description: "Industrial-grade refrigeration, HVAC, boilers, cold rooms & fittings for East Africa.",
+    images: ["/og-image.png"],
+  },
 };
+
 
 export default function ProductsPage() {
   return (
-    <div className="pt-16 lg:pt-20">
+    <div>
       {/* Page Header */}
       <div className="bg-gradient-to-br from-blue-900 to-blue-950 py-14 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">

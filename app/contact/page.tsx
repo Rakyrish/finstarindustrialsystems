@@ -3,14 +3,29 @@ import Link from "next/link";
 import ContactForm from "./ContactForm";
 
 export const metadata: Metadata = {
-  title: "Contact Us",
+  title: "Contact Us – Get a Free Quote for Industrial Equipment",
   description:
-    "Get in touch with Finstar Industrial Systems for quotes, inquiries, or technical support. We're here to help.",
+    "Contact Finstar Industrial Systems in Nairobi for quotes on refrigeration, HVAC, boilers, and cold rooms. 24/7 emergency support. Call +254 700 123 456 or send us a message.",
+  alternates: { canonical: "/contact" },
+  openGraph: {
+    title: "Contact Finstar Industrial Systems | Free Quote for Industrial Equipment",
+    description:
+      "Reach our expert team in Nairobi for industrial refrigeration, HVAC, boiler, and cold room quotes. Fast response. 24/7 emergency support.",
+    url: "https://finstarindustrial.com/contact",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Contact Finstar Industrial Systems" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Contact Finstar Industrial Systems",
+    description: "Get a free quote for industrial refrigeration, HVAC, boilers and cold rooms in Kenya.",
+    images: ["/og-image.png"],
+  },
 };
+
 
 export default function ContactPage() {
   return (
-    <div className="pt-16 lg:pt-20">
+    <div>
       {/* Header */}
       <div className="bg-gradient-to-br from-blue-900 to-blue-950 py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">

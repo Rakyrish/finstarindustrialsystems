@@ -23,29 +23,46 @@ export default function Navbar() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-blue-900 shadow-2xl" : "bg-blue-900/95 backdrop-blur-sm"
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
+        ? "bg-white shadow-lg border-b border-slate-200"
+        : "bg-white/95 backdrop-blur-sm border-b border-slate-100"
         }`}
     >
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-10">
         <div className="flex items-center justify-between h-16 lg:h-20">
+
           {/* Logo */}
-          <Link href="/" onClick={closeAll} className="flex items-center gap-2 group">
-            <div className="w-10 h-10 lg:w-12 lg:h-12 bg-white rounded-lg flex items-center justify-center p-1.5 shadow-sm group-hover:bg-orange-50 transition-colors">
-              <Image
-                src="/logo.png"
-                alt="Finstar Logo"
-                width={48}
-                height={48}
-                className="object-contain"
-              />
-            </div>
-            {/* <img src="/logo.png" alt="Finstar Logo" width={50} height={50} /> */}
-            <div>
-              <span className="text-white font-bold text-lg leading-none">Finstar</span>
-              <span className="block text-blue-300 text-xs font-medium tracking-wider uppercase">
+          <Link href="/" onClick={closeAll} className="flex items-start gap-3 group shrink-0">
+
+            {/* Logo Image */}
+            {/* <div className="relative "> */}
+            <Image
+              src="/logo.png"
+              alt="Finstar Logo"
+              width={50}
+              height={50}
+              className="h-full w-auto object-contain"
+              priority
+            />
+            {/* <Image
+              src="/logo.png"
+              alt="Finstar Logo"
+              fill
+              sizes="(max-width: 1024px) 40px, 48px, "
+              className="object-contain p-1"
+            /> */}
+            {/* </div> */}
+
+            {/* Text */}
+            <div className="flex flex-col justify-center leading-tight">
+              <span className="text-slate-900 font-bold text-base lg:text-lg leading-none">
+                Finstar
+              </span>
+              <span className="text-orange-500 text-[10px] lg:text-xs font-semibold tracking-widest uppercase">
                 Industrial Systems
               </span>
             </div>
+
           </Link>
 
           {/* Desktop Nav */}
@@ -59,7 +76,7 @@ export default function Navbar() {
               onMouseLeave={() => setIsProductsDropdownOpen(false)}
             >
               <button
-                className="flex items-center gap-1 px-4 py-2 text-blue-100 hover:text-white hover:bg-blue-800 rounded-lg transition-all duration-200 text-sm font-medium"
+                className="flex items-center gap-1 px-4 py-2 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all duration-200 text-sm font-semibold"
                 aria-expanded={isProductsDropdownOpen}
               >
                 Products
@@ -73,12 +90,12 @@ export default function Navbar() {
                 </svg>
               </button>
               {isProductsDropdownOpen && (
-                <div className="absolute top-full left-0 mt-1 w-72 bg-white rounded-xl shadow-2xl border border-slate-100 overflow-hidden">
+                <div className="absolute top-full left-0 mt-1 w-72 bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden">
                   <div className="p-2">
                     <Link
                       href="/products"
                       onClick={closeAll}
-                      className="flex items-center gap-2 px-3 py-2.5 text-slate-700 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-sm font-semibold border-b border-slate-100 mb-1"
+                      className="flex items-center gap-2 px-3 py-2.5 text-slate-800 hover:bg-orange-50 hover:text-orange-700 rounded-lg transition-colors text-sm font-semibold border-b border-slate-100 mb-1"
                     >
                       🛍️ All Products
                     </Link>
@@ -87,7 +104,7 @@ export default function Navbar() {
                         key={cat.id}
                         href={`/products?category=${cat.slug}`}
                         onClick={closeAll}
-                        className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:bg-blue-50 hover:text-blue-900 rounded-lg transition-colors text-sm"
+                        className="flex items-center gap-2 px-3 py-2 text-slate-600 hover:bg-orange-50 hover:text-orange-700 rounded-lg transition-colors text-sm font-medium"
                       >
                         <span>{cat.icon}</span>
                         <span>{cat.name}</span>
@@ -103,10 +120,10 @@ export default function Navbar() {
           </div>
 
           {/* Desktop CTA */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-3 shrink-0">
             <Link
               href="/contact"
-              className="px-5 py-2.5 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-400 transition-all duration-200 text-sm shadow-lg hover:shadow-orange-500/30"
+              className="px-5 py-2.5 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-all duration-200 text-sm shadow-md hover:shadow-orange-500/30"
             >
               Get a Quote
             </Link>
@@ -115,7 +132,7 @@ export default function Navbar() {
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="lg:hidden p-2 text-blue-100 hover:text-white hover:bg-blue-800 rounded-lg transition-colors"
+            className="lg:hidden p-2 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
             aria-label="Toggle menu"
           >
             {isMenuOpen ? (
@@ -132,12 +149,12 @@ export default function Navbar() {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="lg:hidden border-t border-blue-800 py-4 space-y-1">
+          <div className="lg:hidden border-t border-slate-200 py-4 space-y-1 bg-white">
             <MobileNavLink href="/" onClick={closeAll}>Home</MobileNavLink>
             <div>
               <button
                 onClick={() => setIsProductsDropdownOpen(!isProductsDropdownOpen)}
-                className="w-full flex items-center justify-between px-4 py-3 text-blue-100 hover:text-white hover:bg-blue-800 rounded-lg transition-colors text-sm font-medium"
+                className="w-full flex items-center justify-between px-4 py-3 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors text-sm font-semibold"
               >
                 <span>Products</span>
                 <svg
@@ -150,7 +167,7 @@ export default function Navbar() {
                 </svg>
               </button>
               {isProductsDropdownOpen && (
-                <div className="ml-4 mt-1 space-y-1 border-l-2 border-blue-700 pl-3">
+                <div className="ml-4 mt-1 space-y-1 border-l-2 border-orange-400 pl-3">
                   <MobileNavLink href="/products" onClick={closeAll}>🛍️ All Products</MobileNavLink>
                   {categories.map((cat) => (
                     <MobileNavLink key={cat.id} href={`/products?category=${cat.slug}`} onClick={closeAll}>
@@ -166,7 +183,7 @@ export default function Navbar() {
               <Link
                 href="/contact"
                 onClick={closeAll}
-                className="block w-full text-center px-5 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-400 transition-colors text-sm"
+                className="block w-full text-center px-5 py-3 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors text-sm"
               >
                 Get a Quote
               </Link>
@@ -182,7 +199,7 @@ function NavLink({ href, children }: { href: string; children: React.ReactNode }
   return (
     <Link
       href={href}
-      className="px-4 py-2 text-blue-100 hover:text-white hover:bg-blue-800 rounded-lg transition-all duration-200 text-sm font-medium"
+      className="px-4 py-2 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all duration-200 text-sm font-semibold"
     >
       {children}
     </Link>
@@ -202,7 +219,7 @@ function MobileNavLink({
     <Link
       href={href}
       onClick={onClick}
-      className="block px-4 py-3 text-blue-100 hover:text-white hover:bg-blue-800 rounded-lg transition-colors text-sm font-medium"
+      className="block px-4 py-3 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors text-sm font-semibold"
     >
       {children}
     </Link>

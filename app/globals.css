@@ -1,4 +1,4 @@
-@import "tailwindcss";
+/* @import "tailwindcss";
 
 @layer base {
   :root {
@@ -78,4 +78,4 @@
     border-2 border-blue-800 hover:bg-blue-800 hover:text-white transition-all duration-200
     focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-2;
   }
-}
+} */

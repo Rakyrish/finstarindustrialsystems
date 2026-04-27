@@ -4,18 +4,40 @@ import { getFeaturedProducts, categories, services } from "@/lib/data";
 import ProductCard from "@/components/ProductCard";
 import CategoryCard from "@/components/CategoryCard";
 import SectionWrapper, { SectionHeader } from "@/components/SectionWrapper";
+import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
-  title: "Home",
+  title:
+    "Industrial Refrigeration, HVAC & Boiler Solutions in Kenya",
   description:
-    "Finstar Industrial Systems – your trusted partner for refrigeration, HVAC, boilers, cold rooms, and industrial fittings across East Africa.",
+    "Finstar Industrial Systems – Kenya's leading supplier and installer of industrial refrigeration, air conditioning (HVAC), steam boilers, cold rooms, and industrial fittings. 500+ clients across East Africa. Get a free quote today.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title:
+      "Finstar Industrial Systems | Refrigeration, HVAC & Boiler Solutions Kenya",
+    description:
+      "Kenya's leading supplier & installer of industrial refrigeration, HVAC, boilers, cold rooms & industrial fittings. 500+ clients. 20+ years experience. Get a free quote.",
+    url: "https://finstarindustrial.com",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Finstar Industrial Systems" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Finstar Industrial Systems | Refrigeration, HVAC & Boilers Kenya",
+    description: "Kenya's leading supplier & installer of industrial refrigeration, HVAC & boilers.",
+    images: ["/og-image.png"],
+  },
 };
+
 
 export default function HomePage() {
   const featuredProducts = getFeaturedProducts();
 
   return (
     <>
+      {/* ── Structured Data ── */}
+      <OrganizationJsonLd />
+      <WebsiteJsonLd />
+
       {/* HERO */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         {/* Background */}

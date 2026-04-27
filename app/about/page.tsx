@@ -4,14 +4,29 @@ import SectionWrapper, { SectionHeader } from "@/components/SectionWrapper";
 import { services } from "@/lib/data";
 
 export const metadata: Metadata = {
-  title: "About Us",
+  title: "About Us – Industrial Equipment Supplier Since 2005",
   description:
-    "Learn about Finstar Industrial Systems – our history, mission, values, and the comprehensive services we offer across East Africa.",
+    "Learn about Finstar Industrial Systems – East Africa's leading industrial refrigeration, HVAC, boiler, and cold room company since 2005. 500+ clients, 1,200+ projects, 150+ engineers.",
+  alternates: { canonical: "/about" },
+  openGraph: {
+    title: "About Finstar Industrial Systems | Kenya's #1 Industrial Equipment Company",
+    description:
+      "Founded in 2005, Finstar Industrial Systems has delivered 1,200+ refrigeration, HVAC, boiler, and cold room projects across East Africa. Meet our expert team.",
+    url: "https://finstarindustrial.com/about",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Finstar Industrial Systems Team" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "About Finstar Industrial Systems",
+    description: "Kenya's leading industrial equipment supplier since 2005. 500+ clients, 1,200+ projects.",
+    images: ["/og-image.png"],
+  },
 };
+
 
 export default function AboutPage() {
   return (
-    <div className="pt-16 lg:pt-20">
+    <div>
       {/* Header */}
       <div className="bg-gradient-to-br from-blue-900 to-blue-950 py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">

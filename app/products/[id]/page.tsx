@@ -4,6 +4,17 @@ import { notFound } from "next/navigation";
 import { getProductById, getRelatedProducts, categories } from "@/lib/data";
 import ProductCard from "@/components/ProductCard";
 import { products } from "@/lib/data";
+import { ProductJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
+
+const BASE_URL = "https://finstarindustrial.com";
+
+const categoryLabels: Record<string, string> = {
+  refrigeration: "Refrigeration Systems",
+  hvac: "Air Conditioning & HVAC",
+  boilers: "Boilers & Steam Systems",
+  "cold-rooms": "Cold Rooms & Insulation",
+  fittings: "Industrial Fittings & Tools",
+};
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -17,11 +28,45 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const product = getProductById(id);
   if (!product) return { title: "Product Not Found" };
+
+  const category = categoryLabels[product.category] ?? product.category;
+  const productUrl = `${BASE_URL}/products/${product.id}`;
+
   return {
     title: product.name,
-    description: product.shortDescription,
+    description: product.description.slice(0, 160),
+    keywords: [
+      product.name,
+      category,
+      "industrial equipment Kenya",
+      "Finstar Industrial Systems",
+      "buy " + product.name,
+    ],
+    alternates: { canonical: `/products/${product.id}` },
+    openGraph: {
+      title: `${product.name} | Finstar Industrial Systems`,
+      description: product.shortDescription,
+      url: productUrl,
+      type: "website",
+      siteName: "Finstar Industrial Systems",
+      images: [
+        {
+          url: "/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: `${product.name} – ${category}`,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.name} | Finstar Industrial Systems`,
+      description: product.shortDescription,
+      images: ["/og-image.png"],
+    },
   };
 }
+
 
 export default async function ProductDetailPage({ params }: Props) {
   const { id } = await params;
@@ -40,8 +85,18 @@ export default async function ProductDetailPage({ params }: Props) {
   };
 
   return (
-    <div className="pt-16 lg:pt-20">
-      {/* Breadcrumb */}
+    <div>
+      {/* ── Structured Data ── */}
+      <ProductJsonLd product={product} />
+      <BreadcrumbJsonLd
+        items={[
+          { name: "Home", href: "/" },
+          { name: "Products", href: "/products" },
+          { name: category?.name ?? "Category", href: `/products?category=${product.category}` },
+          { name: product.name, href: `/products/${product.id}` },
+        ]}
+      />
+
       <div className="bg-slate-50 border-b border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <nav className="flex items-center gap-2 text-slate-500 text-sm flex-wrap" aria-label="Breadcrumb">
