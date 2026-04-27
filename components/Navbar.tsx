@@ -32,7 +32,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16 lg:h-20">
 
           {/* Logo */}
-          <Link href="/" onClick={closeAll} className="flex items-start gap-3 group shrink-0">
+          <Link href="/" onClick={closeAll} className="items-start gap-3 group shrink-0">
 
             {/* Logo Image */}
             {/* <div className="relative "> */}
