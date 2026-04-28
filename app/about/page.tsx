@@ -134,7 +134,7 @@ export default function AboutPage() {
             <div className="text-4xl mb-4">🔭</div>
             <h2 className="text-2xl font-bold text-white mb-3">Our Vision</h2>
             <p className="text-blue-200 leading-relaxed">
-              To be East Africa's foremost industrial systems company – recognised for technical excellence,
+              To be East Africa&apos;s foremost industrial systems company – recognised for technical excellence,
               unwavering reliability, and a legacy of transforming industries through smart, sustainable
               engineering solutions that stand the test of time.
             </p>
@@ -188,7 +188,7 @@ export default function AboutPage() {
       {/* CTA */}
       <section className="py-16 bg-orange-500">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-extrabold text-white mb-4">Let's Work Together</h2>
+          <h2 className="text-3xl font-extrabold text-white mb-4">Let&apos;s Work Together</h2>
           <p className="text-orange-100 mb-8 text-lg">
             Ready to discuss your industrial equipment needs? Our expert team is here to help.
           </p>

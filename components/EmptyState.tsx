@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 interface EmptyStateProps {
   title?: string;
   description?: string;
@@ -20,15 +22,22 @@ export default function EmptyState({
       <div className="text-6xl mb-4 opacity-80">{icon}</div>
       <h3 className="text-xl font-semibold text-slate-700 mb-2">{title}</h3>
       <p className="text-slate-400 text-sm max-w-sm mb-6">{description}</p>
-      {action && (
-        <a
+      {action?.href ? (
+        <Link
           href={action.href}
-          onClick={action.onClick}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-800 text-white font-semibold rounded-lg hover:bg-blue-900 transition-colors text-sm"
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-800 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-900"
         >
           {action.label}
-        </a>
-      )}
+        </Link>
+      ) : null}
+      {action?.onClick && !action.href ? (
+        <button
+          onClick={action.onClick}
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-800 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-900"
+        >
+          {action.label}
+        </button>
+      ) : null}
     </div>
   );
 }

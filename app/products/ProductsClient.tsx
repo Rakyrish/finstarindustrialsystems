@@ -1,121 +1,186 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { products, categories } from "@/lib/data";
-import ProductCard from "@/components/ProductCard";
+import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import EmptyState from "@/components/EmptyState";
-import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import ProductCard from "@/components/ProductCard";
+import { Category, Product } from "@/types";
 
-export default function ProductsClient() {
+const INITIAL_VISIBLE_COUNT = 9;
+const LOAD_MORE_COUNT = 6;
+
+interface ProductsClientProps {
+  initialProducts: Product[];
+  categories: Category[];
+}
+
+export default function ProductsClient({
+  initialProducts,
+  categories,
+}: ProductsClientProps) {
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [visibleCount, setVisibleCount] = useState(9);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
-  // Sync category from URL query param
   useEffect(() => {
-    const cat = searchParams.get("category");
-    if (cat) {
-      setSelectedCategory(cat);
-    }
+    const categoryFromUrl = searchParams.get("category");
+    const timer = setTimeout(() => {
+      setSelectedCategory(categoryFromUrl ?? "all");
+    }, 0);
+    return () => clearTimeout(timer);
   }, [searchParams]);
 
-  const filtered = useMemo(() => {
-    return products.filter((p) => {
-      const matchesCategory = selectedCategory === "all" || p.category === selectedCategory;
+  const filteredProducts = useMemo(() => {
+    return initialProducts.filter((product) => {
+      const normalizedSearch = deferredSearchQuery.trim().toLowerCase();
+      const matchesCategory =
+        selectedCategory === "all" || product.category.slug === selectedCategory;
       const matchesSearch =
-        searchQuery === "" ||
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.shortDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.category.toLowerCase().includes(searchQuery.toLowerCase());
+        normalizedSearch.length === 0 ||
+        product.name.toLowerCase().includes(normalizedSearch) ||
+        product.shortDescription.toLowerCase().includes(normalizedSearch) ||
+        product.category.name.toLowerCase().includes(normalizedSearch);
+
       return matchesCategory && matchesSearch;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [deferredSearchQuery, initialProducts, selectedCategory]);
 
-  const visible = filtered.slice(0, visibleCount);
-  const hasMore = visibleCount < filtered.length;
+  const visibleProducts = filteredProducts.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredProducts.length;
+
+  function syncCategory(slug: string) {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (slug === "all") {
+      params.delete("category");
+    } else {
+      params.set("category", slug);
+    }
+
+    startTransition(() => {
+      router.replace(
+        params.toString() ? `${pathname}?${params.toString()}` : pathname,
+        { scroll: false },
+      );
+    });
+  }
+
+  function applyCategory(slug: string) {
+    setSelectedCategory(slug);
+    setVisibleCount(INITIAL_VISIBLE_COUNT);
+    syncCategory(slug);
+  }
+
+  function clearFilters() {
+    setSelectedCategory("all");
+    setSearchQuery("");
+    setVisibleCount(INITIAL_VISIBLE_COUNT);
+    syncCategory("all");
+  }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-8">
-      {/* Sidebar */}
-      <aside className="w-full lg:w-64 shrink-0 space-y-6">
-        {/* Search */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-3">
+    <div className="flex flex-col gap-8 lg:flex-row">
+      <aside className="w-full shrink-0 space-y-6 lg:w-64">
+        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-700">
             Search Products
           </h2>
           <div className="relative">
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setVisibleCount(9);
+              onChange={(event) => {
+                setSearchQuery(event.target.value);
+                setVisibleCount(INITIAL_VISIBLE_COUNT);
               }}
               placeholder="Search products..."
-              className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-slate-50 placeholder:text-slate-400 text-slate-900"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pr-4 pl-9 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
             />
             <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
+              className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-slate-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
-            {searchQuery && (
+            {searchQuery ? (
               <button
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute top-1/2 right-3 -translate-y-1/2 text-slate-400 hover:text-slate-600"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
-            )}
+            ) : null}
           </div>
         </div>
 
-        {/* Categories Filter */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
-          <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-3">
+        <div className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-700">
             Categories
           </h2>
           <div className="space-y-1">
             <button
-              onClick={() => {
-                setSelectedCategory("all");
-                setVisibleCount(9);
-              }}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              onClick={() => applyCategory("all")}
+              className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
                 selectedCategory === "all"
                   ? "bg-blue-800 text-white"
                   : "text-slate-600 hover:bg-slate-100"
               }`}
             >
               <span>🛍️ All Products</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${selectedCategory === "all" ? "bg-blue-700 text-blue-200" : "bg-slate-100 text-slate-500"}`}>
-                {products.length}
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs ${
+                  selectedCategory === "all"
+                    ? "bg-blue-700 text-blue-200"
+                    : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                {initialProducts.length}
               </span>
             </button>
-            {categories.map((cat) => {
-              const count = products.filter((p) => p.category === cat.slug).length;
+
+            {categories.map((category) => {
+              const count = initialProducts.filter(
+                (product) => product.category.slug === category.slug,
+              ).length;
+
               return (
                 <button
-                  key={cat.id}
-                  onClick={() => {
-                    setSelectedCategory(cat.slug);
-                    setVisibleCount(9);
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                    selectedCategory === cat.slug
+                  key={category.id}
+                  onClick={() => applyCategory(category.slug)}
+                  className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all ${
+                    selectedCategory === category.slug
                       ? "bg-blue-800 text-white"
                       : "text-slate-600 hover:bg-slate-100"
                   }`}
                 >
-                  <span>{cat.icon} {cat.name}</span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${selectedCategory === cat.slug ? "bg-blue-700 text-blue-200" : "bg-slate-100 text-slate-500"}`}>
+                  <span>
+                    {category.icon} {category.name}
+                  </span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs ${
+                      selectedCategory === category.slug
+                        ? "bg-blue-700 text-blue-200"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                  >
                     {count}
                   </span>
                 </button>
@@ -125,67 +190,73 @@ export default function ProductsClient() {
         </div>
       </aside>
 
-      {/* Products Grid */}
-      <div className="flex-1 min-w-0">
-        {/* Results header */}
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-slate-500 text-sm">
-            Showing <span className="font-semibold text-slate-900">{visible.length}</span> of{" "}
-            <span className="font-semibold text-slate-900">{filtered.length}</span> products
-            {selectedCategory !== "all" && (
+      <div className="min-w-0 flex-1">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <p className="text-sm text-slate-500">
+            Showing <span className="font-semibold text-slate-900">{visibleProducts.length}</span>{" "}
+            of <span className="font-semibold text-slate-900">{filteredProducts.length}</span>{" "}
+            products
+            {selectedCategory !== "all" ? (
               <>
                 {" in "}
                 <span className="font-semibold text-blue-800">
-                  {categories.find((c) => c.slug === selectedCategory)?.name}
+                  {categories.find((category) => category.slug === selectedCategory)?.name}
                 </span>
               </>
-            )}
+            ) : null}
           </p>
-          {(selectedCategory !== "all" || searchQuery) && (
+
+          {selectedCategory !== "all" || searchQuery ? (
             <button
-              onClick={() => {
-                setSelectedCategory("all");
-                setSearchQuery("");
-                setVisibleCount(9);
-              }}
-              className="text-sm text-blue-700 hover:text-blue-900 font-medium flex items-center gap-1"
+              onClick={clearFilters}
+              className="flex items-center gap-1 text-sm font-medium text-blue-700 hover:text-blue-900"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               </svg>
               Clear filters
             </button>
-          )}
+          ) : null}
         </div>
 
-        {filtered.length === 0 ? (
+        {filteredProducts.length === 0 ? (
           <EmptyState
             title="No products found"
             description="Try adjusting your search term or clearing the category filter."
             icon="🔍"
-            action={{ label: "Clear Filters", onClick: () => { setSelectedCategory("all"); setSearchQuery(""); } }}
+            action={{ label: "Clear Filters", onClick: clearFilters }}
           />
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-              {visible.map((product) => (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              {visibleProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
 
-            {hasMore && (
+            {hasMore ? (
               <div className="mt-10 text-center">
                 <button
-                  onClick={() => setVisibleCount((c) => c + 6)}
-                  className="inline-flex items-center gap-2 px-8 py-3.5 border-2 border-blue-800 text-blue-800 font-semibold rounded-xl hover:bg-blue-800 hover:text-white transition-all duration-200"
+                  onClick={() => setVisibleCount((count) => count + LOAD_MORE_COUNT)}
+                  className="inline-flex items-center gap-2 rounded-xl border-2 border-blue-800 px-8 py-3.5 font-semibold text-blue-800 transition-all duration-200 hover:bg-blue-800 hover:text-white"
                 >
                   Load More
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </button>
               </div>
-            )}
+            ) : null}
           </>
         )}
       </div>
