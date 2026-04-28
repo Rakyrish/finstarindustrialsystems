@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import ContactForm from "./ContactForm";
 
 export const metadata: Metadata = {
@@ -22,7 +23,6 @@ export const metadata: Metadata = {
   },
 };
 
-
 export default function ContactPage() {
   return (
     <div>
@@ -38,7 +38,7 @@ export default function ContactPage() {
           </nav>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-3">Contact Us</h1>
           <p className="text-blue-200 text-lg max-w-2xl">
-            Have a project in mind? Need a quote or technical support? We'd love to hear from you.
+            Have a project in mind? Need a quote or technical support? We&apos;d love to hear from you.
           </p>
         </div>
       </div>
@@ -125,8 +125,7 @@ export default function ContactPage() {
                 loading="lazy"
                 allowFullScreen
                 referrerPolicy="no-referrer-when-downgrade"
-                // src="https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=Industrial+Area,Nairobi+Kenya"
-                src="https://www.google.com/maps?q=Industrial+Area,Nairobi&output=embed"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15955.161200155627!2d36.8407421!3d-1.3028608!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f111000000001%3A0x0!2sIndustrial%20Area%2C%20Nairobi!5e0!3m2!1sen!2ske!4v1640000000000!5m2!1sen!2ske"
               ></iframe>
             </div>
           </div>
@@ -137,7 +136,18 @@ export default function ContactPage() {
             <p className="text-slate-500 text-sm mb-7">
               Fill in the form and our team will get back to you within 24 hours.
             </p>
-            <ContactForm />
+
+            {/* The fix: Wrap the component that uses useSearchParams in Suspense */}
+            <Suspense fallback={
+              <div className="space-y-4 animate-pulse">
+                <div className="h-10 bg-slate-100 rounded-lg w-full"></div>
+                <div className="h-10 bg-slate-100 rounded-lg w-full"></div>
+                <div className="h-32 bg-slate-100 rounded-lg w-full"></div>
+                <div className="h-12 bg-orange-200 rounded-lg w-1/3"></div>
+              </div>
+            }>
+              <ContactForm />
+            </Suspense>
           </div>
         </div>
       </div>

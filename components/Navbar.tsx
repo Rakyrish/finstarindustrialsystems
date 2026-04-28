@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { categories } from "@/lib/data";
-import Image from "next/image";
+import { navigationCategories } from "@/lib/data";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -32,26 +31,16 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16 lg:h-20">
 
           {/* Logo */}
-          <Link href="/" onClick={closeAll} className="items-start gap-3 group shrink-0">
+          <Link href="/" onClick={closeAll} className="flex items-center gap-3 group shrink-0">
 
             {/* Logo Image */}
-            {/* <div className="relative "> */}
-            <Image
+            {/* <img
               src="/logo.png"
               alt="Finstar Logo"
               width={50}
               height={50}
-              className="h-full w-auto object-contain"
-              priority
-            />
-            {/* <Image
-              src="/logo.png"
-              alt="Finstar Logo"
-              fill
-              sizes="(max-width: 1024px) 40px, 48px, "
-              className="object-contain p-1"
+              className="h-10 w-auto object-contain"
             /> */}
-            {/* </div> */}
 
             {/* Text */}
             <div className="flex flex-col justify-center leading-tight">
@@ -99,7 +88,7 @@ export default function Navbar() {
                     >
                       🛍️ All Products
                     </Link>
-                    {categories.map((cat) => (
+                    {navigationCategories.map((cat) => (
                       <Link
                         key={cat.id}
                         href={`/products?category=${cat.slug}`}
@@ -169,7 +158,7 @@ export default function Navbar() {
               {isProductsDropdownOpen && (
                 <div className="ml-4 mt-1 space-y-1 border-l-2 border-orange-400 pl-3">
                   <MobileNavLink href="/products" onClick={closeAll}>🛍️ All Products</MobileNavLink>
-                  {categories.map((cat) => (
+                  {navigationCategories.map((cat) => (
                     <MobileNavLink key={cat.id} href={`/products?category=${cat.slug}`} onClick={closeAll}>
                       {cat.icon} {cat.name}
                     </MobileNavLink>

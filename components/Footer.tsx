@@ -1,6 +1,6 @@
-import Link from "next/link";
-import { categories } from "@/lib/data";
 import Image from "next/image";
+import Link from "next/link";
+import { navigationCategories } from "@/lib/data";
 
 export default function Footer() {
   return (
@@ -29,7 +29,7 @@ export default function Footer() {
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed mb-4">
               Your trusted partner for industrial refrigeration, HVAC, boiler systems,
-              cold rooms, and industrial fittings across East Africa.
+              cold rooms, and industrial fittings across East Africa
             </p>
             <div className="flex items-center gap-3">
               <SocialIcon href="#" label="LinkedIn">
@@ -53,7 +53,7 @@ export default function Footer() {
           <div>
             <h3 className="text-white font-semibold text-sm uppercase tracking-wider mb-4">Product Categories</h3>
             <ul className="space-y-2">
-              {categories.map((cat) => (
+              {navigationCategories.map((cat) => (
                 <li key={cat.id}>
                   <Link
                     href={`/products?category=${cat.slug}`}

@@ -2,22 +2,14 @@ import { Product } from "@/types";
 
 const BASE_URL = "https://finstarindustrial.com";
 
-/** Product JSON-LD Schema (schema.org/Product) */
 export function ProductJsonLd({ product }: { product: Product }) {
-  const categoryLabels: Record<string, string> = {
-    refrigeration: "Refrigeration Systems",
-    hvac: "Air Conditioning & HVAC",
-    boilers: "Boilers & Steam Systems",
-    "cold-rooms": "Cold Rooms & Insulation",
-    fittings: "Industrial Fittings & Tools",
-  };
-
   const schema = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product.name,
     description: product.description,
-    url: `${BASE_URL}/products/${product.id}`,
+    url: `${BASE_URL}/products/${product.slug}`,
+    image: product.imageUrl ? [product.imageUrl] : undefined,
     brand: {
       "@type": "Brand",
       name: "Finstar Industrial Systems",
@@ -27,7 +19,7 @@ export function ProductJsonLd({ product }: { product: Product }) {
       name: "Finstar Industrial Systems",
       url: BASE_URL,
     },
-    category: categoryLabels[product.category] ?? product.category,
+    category: product.category.name,
     offers: {
       "@type": "Offer",
       priceCurrency: "KES",
@@ -49,12 +41,11 @@ export function ProductJsonLd({ product }: { product: Product }) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema, null, 0) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   );
 }
 
-/** Organization JSON-LD Schema (used on Home / About) */
 export function OrganizationJsonLd() {
   const schema = {
     "@context": "https://schema.org",
@@ -97,12 +88,11 @@ export function OrganizationJsonLd() {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema, null, 0) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   );
 }
 
-/** BreadcrumbList JSON-LD */
 export function BreadcrumbJsonLd({
   items,
 }: {
@@ -122,12 +112,11 @@ export function BreadcrumbJsonLd({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema, null, 0) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   );
 }
 
-/** WebSite / SiteLinksSearchBox JSON-LD */
 export function WebsiteJsonLd() {
   const schema = {
     "@context": "https://schema.org",
@@ -147,7 +136,7 @@ export function WebsiteJsonLd() {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema, null, 0) }}
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   );
 }

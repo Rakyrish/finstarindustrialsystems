@@ -1,84 +1,97 @@
-import Link from "next/link";
+// "use client"
 import Image from "next/image";
+import Link from "next/link";
+import { getCategoryIcon } from "@/lib/data";
 import { Product } from "@/types";
+// import ContactButtons from "@/components/ContactButtons";
 
 interface ProductCardProps {
   product: Product;
 }
 
-export default function ProductCard({ product }: ProductCardProps) {
-  const categoryLabels: Record<string, string> = {
-    refrigeration: "Refrigeration",
-    hvac: "HVAC",
-    boilers: "Boilers & Steam",
-    "cold-rooms": "Cold Rooms",
-    fittings: "Fittings & Tools",
-  };
+const categoryColors: Record<string, string> = {
+  refrigeration: "bg-blue-100 text-blue-800",
+  hvac: "bg-cyan-100 text-cyan-800",
+  boilers: "bg-red-100 text-red-800",
+  "cold-rooms": "bg-indigo-100 text-indigo-800",
+  fittings: "bg-slate-100 text-slate-700",
+};
 
-  const categoryColors: Record<string, string> = {
-    refrigeration: "bg-blue-100 text-blue-800",
-    hvac: "bg-cyan-100 text-cyan-800",
-    boilers: "bg-red-100 text-red-800",
-    "cold-rooms": "bg-indigo-100 text-indigo-800",
-    fittings: "bg-slate-100 text-slate-700",
-  };
+export default function ProductCard({ product }: ProductCardProps) {
+  const categoryIcon = getCategoryIcon(product.category.slug, product.category.icon);
+
 
   return (
-    <Link href={`/products/${product.id}`} className="group block">
-      <article className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-slate-100 h-full flex flex-col">
-        {/* Image */}
-        <div className="relative h-52 bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-7xl opacity-30 select-none">
-              {product.category === "refrigeration" && "❄️"}
-              {product.category === "hvac" && "💨"}
-              {product.category === "boilers" && "🔥"}
-              {product.category === "cold-rooms" && "🏭"}
-              {product.category === "fittings" && "🔧"}
-            </span>
-          </div>
-          {/* Overlay gradient on hover */}
-          <div className="absolute inset-0 bg-gradient-to-t from-blue-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          {/* Category Badge */}
+    <Link href={`/products/${product.slug}`} className="group block">
+      <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl">
+        <div className="relative h-52 overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+          {product.imageUrl ? (
+            <>
+              <Image
+                src={product.imageUrl}
+                alt={product.name}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                className="object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/30 via-transparent to-transparent" />
+            </>
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="select-none text-7xl opacity-30">{categoryIcon}</span>
+            </div>
+          )}
+
           <div className="absolute top-3 left-3">
             <span
-              className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${
-                categoryColors[product.category] || "bg-slate-100 text-slate-700"
-              }`}
+              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${categoryColors[product.category.slug] || "bg-slate-100 text-slate-700"
+                }`}
             >
-              {categoryLabels[product.category] || product.category}
+              {product.category.name}
             </span>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-5 flex flex-col flex-1">
-          <h3 className="font-semibold text-slate-900 text-base leading-snug mb-2 group-hover:text-blue-800 transition-colors line-clamp-2">
+        <div className="flex flex-1 flex-col p-5">
+          <h3 className="mb-2 line-clamp-2 text-base font-semibold leading-snug text-slate-900 transition-colors group-hover:text-blue-800">
             {product.name}
           </h3>
-          <p className="text-slate-500 text-sm leading-relaxed flex-1 line-clamp-3">
-            {product.shortDescription}
+          <p className="flex-1 line-clamp-3 text-sm leading-relaxed text-slate-500">
+            {product.shortDescription || product.description}
           </p>
+          {/* <ContactButtons productName={product.name} /> */}
+
+
           <div className="mt-4 flex items-center justify-between">
-            <span className="text-blue-700 text-sm font-semibold group-hover:text-blue-800 flex items-center gap-1">
+            <span className="flex items-center gap-1 text-sm font-semibold text-blue-700 group-hover:text-blue-800">
               View Details
               <svg
-                className="w-4 h-4 transition-transform group-hover:translate-x-1"
+                className="h-4 w-4 transition-transform group-hover:translate-x-1"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </span>
-            <div className="w-8 h-8 bg-blue-50 group-hover:bg-blue-800 rounded-lg flex items-center justify-center transition-colors duration-300">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-50 transition-colors duration-300 group-hover:bg-blue-800">
               <svg
-                className="w-4 h-4 text-blue-700 group-hover:text-white transition-colors"
+                className="h-4 w-4 text-blue-700 transition-colors group-hover:text-white"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </div>
           </div>
