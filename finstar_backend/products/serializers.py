@@ -5,7 +5,7 @@ DRF Serializers for FINSTAR API.
 from urllib.parse import urlparse
 
 from rest_framework import serializers
-from .models import Category, Product, Inquiry
+from .models import Category, Product, Inquiry, InventoryItem
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -150,3 +150,120 @@ class InquirySerializer(serializers.ModelSerializer):
         if len(value.strip()) < 10:
             raise serializers.ValidationError("Message must be at least 10 characters.")
         return value.strip()
+
+class InventoryItemSerializer(serializers.ModelSerializer):
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    category_name = serializers.CharField(source='product.category.name', read_only=True)
+    category_id = serializers.IntegerField(source='product.category.id', read_only=True)
+    stock_status = serializers.ReadOnlyField()
+    margin_percent = serializers.ReadOnlyField()
+    
+
+    class Meta:
+        model = InventoryItem
+        fields = [
+            'id', 'product', 'product_name', 'category_name', 'category_id',
+            'sku', 'unit', 'cost_price', 'unit_price',
+            'quantity_in_stock', 'reorder_level',
+            'stock_status', 'margin_percent', 'last_updated',
+        ]
+        read_only_fields = ['last_updated', 'stock_status', 'margin_percent']
+# -----------------------------------------------------------------------
+# Add StockMovementSerializer to your existing serializers.py.
+# Inquiry serializers are UNCHANGED — no product/quantity fields.
+# -----------------------------------------------------------------------
+
+from rest_framework import serializers
+from .models import StockMovement
+
+
+class StockMovementSerializer(serializers.ModelSerializer):
+    movement_type_display = serializers.CharField(
+        source="get_movement_type_display", read_only=True
+    )
+    performed_by_username = serializers.CharField(
+        source="performed_by.username", read_only=True, default=None
+    )
+    product_name = serializers.CharField(
+        source="inventory_item.product.name", read_only=True
+    )
+    sku = serializers.CharField(
+        source="inventory_item.sku", read_only=True
+    )
+
+    class Meta:
+        model = StockMovement
+        fields = [
+            "id",
+            "sku",
+            "product_name",
+            "movement_type",
+            "movement_type_display",
+            "quantity_delta",
+            "quantity_before",
+            "quantity_after",
+            "notes",
+            "performed_by_username",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
+# ── Standalone Inventory Serializers ──────────────────────────────────────────
+
+from .models import StandaloneInventoryItem, StandaloneInventoryMovement
+
+
+class StandaloneInventoryItemSerializer(serializers.ModelSerializer):
+    stock_status = serializers.ReadOnlyField()
+    margin_percent = serializers.ReadOnlyField()
+
+    class Meta:
+        model = StandaloneInventoryItem
+        fields = [
+            "id",
+            "name",
+            "section",
+            "quantity_in_stock",
+            "cost_price",
+            "sell_price",
+            "reorder_level",
+            "stock_status",
+            "margin_percent",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "stock_status", "margin_percent", "created_at", "updated_at"]
+
+    def validate_name(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("Item name is required.")
+        return value.strip().upper()
+
+
+class StandaloneInventoryMovementSerializer(serializers.ModelSerializer):
+    movement_type_display = serializers.CharField(
+        source="get_movement_type_display", read_only=True
+    )
+    performed_by_username = serializers.CharField(
+        source="performed_by.username", read_only=True, default=None
+    )
+    item_name = serializers.CharField(
+        source="inventory_item.name", read_only=True
+    )
+
+    class Meta:
+        model = StandaloneInventoryMovement
+        fields = [
+            "id",
+            "item_name",
+            "movement_type",
+            "movement_type_display",
+            "quantity_delta",
+            "quantity_before",
+            "quantity_after",
+            "notes",
+            "performed_by_username",
+            "created_at",
+        ]
+        read_only_fields = fields

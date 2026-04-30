@@ -8,22 +8,30 @@ from collections import deque
 from pathlib import Path
 
 from django.conf import settings
+from decimal import Decimal
 from django.db import connection
-from django.db.models import Count, Q
+from django.db.models import Count, Q, F, Sum, DecimalField, IntegerField
+from django.db.models.functions import Coalesce
 from django.db.utils import OperationalError
 from rest_framework import generics, parsers, permissions, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework import viewsets
+from rest_framework.permissions import IsAdminUser, AllowAny
 
 from .cloudinary_service import (
     CloudinaryConfigurationError,
     upload_product_image,
 )
-from .models import Category, Inquiry, Product
+from .models import (
+    Category, Inquiry, Product, InventoryItem,
+    StandaloneInventoryItem, StandaloneInventoryMovement
+)
 from .pagination import ProductPagination
 from .serializers import (
     AdminCategorySerializer,
@@ -33,10 +41,23 @@ from .serializers import (
     InquirySerializer,
     ProductListSerializer,
     ProductSerializer,
+    InventoryItemSerializer,
 )
 
 logger = logging.getLogger("products")
 
+
+# ── Shared auth mixin ─────────────────────────────────────────────────────────
+# All admin views inherit this so JWT is explicit and never relies on the
+# project-wide DEFAULT_AUTHENTICATION_CLASSES default.
+
+class JWTAdminMixin:
+    """Enforce JWT authentication + IsAdminUser on any view that inherits it."""
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAdminUser]
+
+
+# ── Auth ──────────────────────────────────────────────────────────────────────
 
 class StaffTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -50,7 +71,9 @@ class StaffTokenObtainPairSerializer(TokenObtainPairSerializer):
         data = super().validate(attrs)
 
         if not self.user.is_staff:
-            raise AuthenticationFailed("Staff access is required for this dashboard.")
+            raise AuthenticationFailed(
+                "Staff access is required for this dashboard."
+            )
 
         data["user"] = {
             "id": self.user.id,
@@ -65,9 +88,11 @@ class StaffTokenObtainPairView(TokenObtainPairView):
     serializer_class = StaffTokenObtainPairSerializer
 
 
+# ── Health check (public) ─────────────────────────────────────────────────────
+
 class HealthCheckView(APIView):
     authentication_classes = []
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [AllowAny]
 
     def get(self, request):
         start = time.perf_counter()
@@ -95,9 +120,9 @@ class HealthCheckView(APIView):
         )
 
 
-class AdminDashboardOverviewView(APIView):
-    permission_classes = [permissions.IsAdminUser]
+# ── Admin: dashboard overview ─────────────────────────────────────────────────
 
+class AdminDashboardOverviewView(JWTAdminMixin, APIView):
     def get(self, request):
         product_totals = Product.objects.aggregate(
             total_products=Count("id"),
@@ -105,23 +130,77 @@ class AdminDashboardOverviewView(APIView):
             inactive_products=Count("id", filter=Q(is_active=False)),
         )
 
+        # Inventory metrics
+        inventory_stats = StandaloneInventoryItem.objects.aggregate(
+            total_inventory_items=Count("id"),
+            total_inventory_value=Coalesce(Sum(F("quantity_in_stock") * F("sell_price"), output_field=DecimalField()), Decimal('0.00')),
+            total_cost_value=Coalesce(Sum(F("quantity_in_stock") * F("cost_price"), output_field=DecimalField()), Decimal('0.00')),
+            low_stock_count=Count("id", filter=Q(quantity_in_stock__gt=0, quantity_in_stock__lte=F("reorder_level"))),
+            out_of_stock_count=Count("id", filter=Q(quantity_in_stock=0)),
+            in_stock_count=Count("id", filter=Q(quantity_in_stock__gt=F("reorder_level"))),
+            sections_count=Count("section", distinct=True)
+        )
+
+        # Category breakdown
+        products_by_category = list(
+            Category.objects.annotate(count=Count("products"))
+            .values("name", "count")
+            .filter(count__gt=0)
+            .order_by("-count")
+        )
+
+        # Recent inquiries
+        recent_inquiries = list(
+            Inquiry.objects.order_by("-created_at")[:5]
+            .values("id", "name", "email", "message", "created_at")
+        )
+
+        # Stock distribution
+        stock_distribution = {
+            "in_stock": inventory_stats["in_stock_count"],
+            "low_stock": inventory_stats["low_stock_count"],
+            "out_of_stock": inventory_stats["out_of_stock_count"],
+        }
+
+        # Inventory by section
+        inventory_by_section = list(
+            StandaloneInventoryItem.objects.values("section")
+            .annotate(
+                count=Count("id"),
+                value=Coalesce(Sum(F("quantity_in_stock") * F("sell_price"), output_field=DecimalField()), Decimal('0.00'))
+            )
+            .order_by("-value")
+        )
+
+        # Top inventory items by value
+        top_items_by_value = list(
+            StandaloneInventoryItem.objects.annotate(
+                value=F("quantity_in_stock") * F("sell_price")
+            )
+            .order_by("-value")[:10]
+            .values("name", "quantity_in_stock", "value")
+        )
+
         data = {
             **product_totals,
+            **inventory_stats,
             "total_categories": Category.objects.count(),
             "total_inquiries": Inquiry.objects.count(),
+            "products_by_category": products_by_category,
+            "stock_distribution": stock_distribution,
+            "recent_inquiries": recent_inquiries,
+            "inventory_by_section": inventory_by_section,
+            "top_items_by_value": top_items_by_value,
         }
         return Response(data)
 
 
-class AdminImageUploadView(APIView):
-    permission_classes = [permissions.IsAdminUser]
+# ── Admin: image upload ───────────────────────────────────────────────────────
+
+class AdminImageUploadView(JWTAdminMixin, APIView):
     parser_classes = [parsers.MultiPartParser, parsers.FormParser]
 
     def post(self, request):
-        print("FILES:", request.FILES)
-        print("Content-Type:", request.content_type)
-        print("DATA:", request.data)
-
         file_obj = request.FILES.get("image")
         if not file_obj:
             raise ValidationError({"image": ["An image file is required."]})
@@ -136,7 +215,9 @@ class AdminImageUploadView(APIView):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
         except Exception:
-            logger.exception("Cloudinary image upload failed for user_id=%s", request.user.id)
+            logger.exception(
+                "Cloudinary image upload failed for user_id=%s", request.user.id
+            )
             return Response(
                 {"detail": "Image upload failed. Please try again."},
                 status=status.HTTP_502_BAD_GATEWAY,
@@ -148,57 +229,47 @@ class AdminImageUploadView(APIView):
         extension = Path(file_obj.name).suffix.lower().lstrip(".")
         if extension not in settings.ALLOWED_PRODUCT_IMAGE_EXTENSIONS:
             raise ValidationError(
-                {
-                    "image": [
-                        "Unsupported file type. Allowed types: jpg, jpeg, png, webp."
-                    ]
-                }
+                {"image": ["Unsupported file type. Allowed types: jpg, jpeg, png, webp."]}
             )
 
         content_type = getattr(file_obj, "content_type", "")
-
         if content_type not in settings.ALLOWED_PRODUCT_IMAGE_CONTENT_TYPES:
             raise ValidationError(
-                {
-                    "image": [
-                        "Unsupported content type. Allowed types: image/jpeg, image/png, image/webp."
-                    ]
-                }
+                {"image": ["Unsupported content type. Allowed types: image/jpeg, image/png, image/webp."]}
             )
 
         if file_obj.size > settings.PRODUCT_IMAGE_MAX_UPLOAD_BYTES:
             raise ValidationError(
-                {
-                    "image": [
-                        f"Image file is too large. Maximum size is {settings.PRODUCT_IMAGE_MAX_UPLOAD_BYTES} bytes."
-                    ]
-                }
+                {"image": [f"Image file is too large. Maximum size is {settings.PRODUCT_IMAGE_MAX_UPLOAD_BYTES} bytes."]}
             )
 
+
+# ── Public: categories ────────────────────────────────────────────────────────
 
 class CategoryListView(generics.ListAPIView):
     """
     GET /api/categories
     List public categories with active product counts.
     """
-
     serializer_class = CategorySerializer
     pagination_class = None
 
     def get_queryset(self):
         return Category.objects.annotate(
-            product_count_annotated=Count("products", filter=Q(products__is_active=True))
+            product_count_annotated=Count(
+                "products", filter=Q(products__is_active=True)
+            )
         ).order_by("name")
 
 
-class AdminCategoryListCreateView(generics.ListCreateAPIView):
+# ── Admin: categories ─────────────────────────────────────────────────────────
+
+class AdminCategoryListCreateView(JWTAdminMixin, generics.ListCreateAPIView):
     """
-    GET /api/admin/categories
+    GET  /api/admin/categories
     POST /api/admin/categories
     """
-
     serializer_class = AdminCategorySerializer
-    permission_classes = [permissions.IsAdminUser]
     pagination_class = None
 
     def get_queryset(self):
@@ -207,9 +278,14 @@ class AdminCategoryListCreateView(generics.ListCreateAPIView):
         ).order_by("name")
 
 
-class AdminCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
+class AdminCategoryDetailView(JWTAdminMixin, generics.RetrieveUpdateDestroyAPIView):
+    """
+    GET    /api/admin/categories/{id}
+    PUT    /api/admin/categories/{id}
+    PATCH  /api/admin/categories/{id}
+    DELETE /api/admin/categories/{id}
+    """
     serializer_class = AdminCategorySerializer
-    permission_classes = [permissions.IsAdminUser]
     lookup_field = "pk"
 
     def get_queryset(self):
@@ -223,8 +299,10 @@ class AdminCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
         if product_count > 0:
             return Response(
                 {
-                    "error": f"Cannot delete category with {product_count} product(s). "
-                    "Remove or reassign them first."
+                    "error": (
+                        f"Cannot delete category with {product_count} product(s). "
+                        "Remove or reassign them first."
+                    )
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -232,12 +310,13 @@ class AdminCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# ── Public: products ──────────────────────────────────────────────────────────
+
 class ProductListView(generics.ListAPIView):
     """
     GET /api/products
     Paginated public product list.
     """
-
     serializer_class = ProductListSerializer
     pagination_class = ProductPagination
 
@@ -260,20 +339,19 @@ class ProductDetailView(generics.RetrieveAPIView):
     GET /api/products/{slug}
     Retrieve a single active product by slug.
     """
-
     serializer_class = ProductSerializer
     queryset = Product.objects.select_related("category").filter(is_active=True)
     lookup_field = "slug"
 
 
-class AdminProductListCreateView(generics.ListCreateAPIView):
+# ── Admin: products ───────────────────────────────────────────────────────────
+
+class AdminProductListCreateView(JWTAdminMixin, generics.ListCreateAPIView):
     """
-    GET /api/admin/products
+    GET  /api/admin/products
     POST /api/admin/products
     """
-
     serializer_class = AdminProductSerializer
-    permission_classes = [permissions.IsAdminUser]
     pagination_class = ProductPagination
     ordering_fields = ["name", "created_at", "updated_at"]
     ordering = ["-updated_at"]
@@ -301,15 +379,14 @@ class AdminProductListCreateView(generics.ListCreateAPIView):
         return queryset.order_by("-updated_at")
 
 
-class AdminProductDetailView(generics.RetrieveUpdateDestroyAPIView):
+class AdminProductDetailView(JWTAdminMixin, generics.RetrieveUpdateDestroyAPIView):
     """
-    GET /api/admin/products/{id}
-    PUT /api/admin/products/{id}
+    GET    /api/admin/products/{id}
+    PUT    /api/admin/products/{id}
+    PATCH  /api/admin/products/{id}
     DELETE /api/admin/products/{id}
     """
-
     serializer_class = AdminProductSerializer
-    permission_classes = [permissions.IsAdminUser]
     queryset = Product.objects.select_related("category").all()
     lookup_field = "pk"
 
@@ -320,12 +397,13 @@ class AdminProductDetailView(generics.RetrieveUpdateDestroyAPIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+# ── Public: inquiries ─────────────────────────────────────────────────────────
+
 class InquiryCreateView(generics.CreateAPIView):
     """
     POST /api/inquiries
     Submit a contact form inquiry.
     """
-
     serializer_class = InquirySerializer
     queryset = Inquiry.objects.all()
 
@@ -339,13 +417,13 @@ class InquiryCreateView(generics.CreateAPIView):
         )
 
 
-class AdminInquiryListView(generics.ListAPIView):
+# ── Admin: inquiries ──────────────────────────────────────────────────────────
+
+class AdminInquiryListView(JWTAdminMixin, generics.ListAPIView):
     """
     GET /api/admin/inquiries
     """
-
     serializer_class = AdminInquirySerializer
-    permission_classes = [permissions.IsAdminUser]
     ordering_fields = ["created_at", "name", "email"]
     ordering = ["-created_at"]
 
@@ -363,10 +441,10 @@ class AdminInquiryListView(generics.ListAPIView):
         return queryset
 
 
-class AdminErrorLogsView(APIView):
-    """Return recent ERROR/WARNING lines from the application log file."""
+# ── Admin: error logs ─────────────────────────────────────────────────────────
 
-    permission_classes = [permissions.IsAdminUser]
+class AdminErrorLogsView(JWTAdminMixin, APIView):
+    """Return recent ERROR/WARNING lines from the application log file."""
 
     def get(self, request):
         log_file = Path(settings.BASE_DIR) / "logs" / "finstar.log"
@@ -393,15 +471,15 @@ class AdminErrorLogsView(APIView):
         return Response({"logs": list(error_lines)})
 
 
-class AIGenerateProductView(APIView):
+# ── Admin: AI product generation ──────────────────────────────────────────────
+
+class AIGenerateProductView(JWTAdminMixin, APIView):
     """
     POST /api/admin/ai/generate-product
 
     Accept an image file or image_url, analyse it with AI,
     and return auto-generated product details.
     """
-
-    permission_classes = [permissions.IsAdminUser]
     parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
 
     def post(self, request):
@@ -439,7 +517,6 @@ class AIGenerateProductView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # Call AI service
         try:
             details = generate_product_details(image_url)
         except AIServiceError as exc:
