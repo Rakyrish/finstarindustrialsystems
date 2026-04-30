@@ -3,7 +3,55 @@ Django Admin configuration for FINSTAR models.
 """
 
 from django.contrib import admin
-from .models import Category, Product, Inquiry
+from .models import (
+    Category, Product, Inquiry, InventoryItem,
+    StandaloneInventoryItem, StandaloneInventoryMovement,
+)
+
+@admin.register(StandaloneInventoryItem)
+class StandaloneInventoryItemAdmin(admin.ModelAdmin):
+    list_display = [
+        'name', 'section', 'quantity_in_stock', 'cost_price',
+        'sell_price', 'reorder_level', 'stock_status', 'updated_at',
+    ]
+    list_editable = ['quantity_in_stock', 'cost_price', 'sell_price', 'reorder_level']
+    list_filter = ['section']
+    search_fields = ['name', 'section']
+    readonly_fields = ['stock_status', 'margin_percent', 'created_at', 'updated_at']
+    ordering = ['name']
+
+
+@admin.register(StandaloneInventoryMovement)
+class StandaloneInventoryMovementAdmin(admin.ModelAdmin):
+    list_display = [
+        'inventory_item', 'movement_type', 'quantity_delta',
+        'quantity_before', 'quantity_after', 'performed_by', 'created_at',
+    ]
+    list_filter = ['movement_type']
+    search_fields = ['inventory_item__name', 'notes']
+    readonly_fields = ['inventory_item', 'movement_type', 'quantity_delta',
+                       'quantity_before', 'quantity_after', 'notes',
+                       'performed_by', 'created_at']
+    ordering = ['-created_at']
+
+
+
+@admin.register(InventoryItem)
+class InventoryItemAdmin(admin.ModelAdmin):
+    list_display = [
+        'sku', 'product', 'category', 'unit_price',
+        'cost_price', 'quantity_in_stock', 'reorder_level',
+        'stock_status', 'last_updated'
+    ]
+    list_editable = ['unit_price', 'cost_price', 'quantity_in_stock', 'reorder_level']
+    list_filter = ['product__category', 'quantity_in_stock']
+    search_fields = ['sku', 'product__name']
+    readonly_fields = ['stock_status', 'margin_percent', 'last_updated']
+    ordering = ['product__name']
+
+    def category(self, obj):
+        return obj.product.category.name if obj.product.category else '—'
+    category.short_description = 'Category'
 
 
 @admin.register(Category)

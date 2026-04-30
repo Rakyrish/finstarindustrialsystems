@@ -192,6 +192,7 @@ export function ProductForm({ categories, product, onSave, onCancel }: { categor
               {imageMode === "upload" ? (
                 <>
                   <input
+                    key="file-upload"
                     type="file"
                     accept="image/jpeg, image/png, image/webp"
                     onChange={handleImageChange}
@@ -202,9 +203,10 @@ export function ProductForm({ categories, product, onSave, onCancel }: { categor
               ) : (
                 <>
                   <input
+                    key="url-upload"
                     type="url"
                     placeholder="https://example.com/image.jpg"
-                    value={urlInput}
+                    value={urlInput || ""}
                     onChange={e => handleUrlChange(e.target.value)}
                     className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-orange-500 outline-none transition"
                   />

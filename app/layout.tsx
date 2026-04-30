@@ -119,6 +119,7 @@ export default function RootLayout({
       <head>
         {/* Anti-FOUC: runs before any CSS is painted. Must stay inlined. */}
         <script
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('finstar-theme');var d=window.matchMedia('(prefers-color-scheme:dark)').matches;var el=document.documentElement;if(t==='dark'||(t===null&&d)){el.classList.add('dark');}else{el.classList.remove('dark');}}catch(e){}})();`,
           }}

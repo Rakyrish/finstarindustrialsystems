@@ -36,7 +36,9 @@ const MenuIcon = () => (
 const CloseIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" x2="6" y1="6" y2="18" /><line x1="6" x2="18" y1="6" y2="18" /></svg>
 );
-
+const InventoryIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" /></svg>
+);
 const LoaderIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
 );
@@ -82,8 +84,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     { name: "Dashboard", href: "/admin/dashboard", icon: DashboardIcon },
     { name: "Products", href: "/admin/products", icon: PackageIcon },
     { name: "Categories", href: "/admin/categories", icon: FolderIcon },
+    { name: "Inventory", href: "/admin/inventory", icon: InventoryIcon },
     { name: "Inquiries", href: "/admin/inquiries", icon: MessageIcon },
     { name: "Monitoring", href: "/admin/monitoring", icon: ActivityIcon },
+
 
   ];
 

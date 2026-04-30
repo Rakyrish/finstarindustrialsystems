@@ -117,7 +117,7 @@ export default function ContactPage() {
             </div>
 
             {/* Emergency */}
-            <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/50 rounded-2xl p-6">
+            {/* <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/50 rounded-2xl p-6">
               <div className="flex items-start gap-3">
                 <span className="text-2xl">⚡</span>
                 <div>
@@ -136,7 +136,7 @@ export default function ContactPage() {
                   </a>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             {/* Map Placeholder */}
             {/* Map */}

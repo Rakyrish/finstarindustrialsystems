@@ -1,9 +1,19 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useTheme } from "./ThemeProvider";
 
 export function ThemeToggle() {
   const { theme, toggleTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Avoid hydration mismatch by always rendering the "light" state on the server
+  // and during the first client render before useEffect fires.
+  const currentTheme = mounted ? theme : "light";
 
   return (
     <button
@@ -11,7 +21,7 @@ export function ThemeToggle() {
       className="p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-100 dark:hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900"
       aria-label="Toggle theme"
     >
-      {theme === "light" ? (
+      {currentTheme === "light" ? (
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="20"
