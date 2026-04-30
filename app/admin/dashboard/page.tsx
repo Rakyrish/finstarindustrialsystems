@@ -30,12 +30,12 @@ const PlusIcon = () => (
 
 function SkeletonCard() {
   return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-6 animate-pulse">
+    <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm animate-pulse">
       <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-slate-800" />
+        <div className="w-14 h-14 rounded-2xl bg-slate-200 dark:bg-slate-800" />
         <div className="flex-1 space-y-2">
-          <div className="h-3 w-20 bg-slate-800 rounded" />
-          <div className="h-7 w-12 bg-slate-800 rounded" />
+          <div className="h-3 w-20 bg-slate-200 dark:bg-slate-800 rounded" />
+          <div className="h-7 w-12 bg-slate-200 dark:bg-slate-800 rounded" />
         </div>
       </div>
     </div>
@@ -111,14 +111,14 @@ export default function DashboardPage() {
         {statCards.map((card, idx) => {
           const Icon = card.icon;
           return (
-            <div key={idx} className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm transition hover:border-white/20 hover:shadow-lg">
+            <div key={idx} className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-6 shadow-sm transition hover:border-slate-300 dark:hover:border-white/20 hover:shadow-md dark:hover:shadow-lg dark:shadow-none group">
               <div className="flex items-center gap-4">
-                <div className={`p-3.5 rounded-2xl ${card.bg} ${card.color}`}>
+                <div className={`p-3.5 rounded-2xl ${card.bg} ${card.color} group-hover:scale-110 transition-transform`}>
                   {Icon() as React.ReactNode}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-400">{card.label}</p>
-                  <p className="text-3xl font-bold text-white mt-0.5">{card.value}</p>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{card.label}</p>
+                  <p className="text-3xl font-bold text-slate-900 dark:text-white mt-0.5">{card.value}</p>
                 </div>
               </div>
             </div>
@@ -129,34 +129,34 @@ export default function DashboardPage() {
       {/* API Health + Quick Actions Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* API Health Card */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-5">
-            <div className={`p-3 rounded-xl ${isHealthy ? "bg-green-500/10 text-green-400" : "bg-red-500/10 text-red-400"}`}>
+            <div className={`p-3 rounded-xl ${isHealthy ? "bg-green-500/10 text-green-600 dark:text-green-400" : "bg-red-500/10 text-red-600 dark:text-red-400"}`}>
               <HeartPulseIcon />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">API Health</h3>
-              <p className="text-xs text-slate-400">Real-time backend status</p>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">API Health</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Real-time backend status</p>
             </div>
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-center justify-between py-2.5 px-4 bg-slate-900/50 rounded-xl">
-              <span className="text-sm text-slate-400">Status</span>
-              <span className={`inline-flex items-center gap-1.5 text-sm font-semibold ${isHealthy ? "text-green-400" : "text-red-400"}`}>
-                <div className={`w-2 h-2 rounded-full ${isHealthy ? "bg-green-400" : "bg-red-400"} animate-pulse`} />
+            <div className="flex items-center justify-between py-2.5 px-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-transparent">
+              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Status</span>
+              <span className={`inline-flex items-center gap-1.5 text-sm font-bold ${isHealthy ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                <div className={`w-2 h-2 rounded-full ${isHealthy ? "bg-green-500 dark:bg-green-400" : "bg-red-500 dark:bg-red-400"} animate-pulse`} />
                 {isHealthy ? "Healthy" : "Error"}
               </span>
             </div>
-            <div className="flex items-center justify-between py-2.5 px-4 bg-slate-900/50 rounded-xl">
-              <span className="text-sm text-slate-400">Database</span>
-              <span className={`text-sm font-medium ${health?.database === "connected" ? "text-green-400" : "text-red-400"}`}>
+            <div className="flex items-center justify-between py-2.5 px-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-transparent">
+              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Database</span>
+              <span className={`text-sm font-bold ${health?.database === "connected" ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
                 {health?.database === "connected" ? "Connected" : "Disconnected"}
               </span>
             </div>
-            <div className="flex items-center justify-between py-2.5 px-4 bg-slate-900/50 rounded-xl">
-              <span className="text-sm text-slate-400">Response Time</span>
-              <span className="text-sm font-medium text-white">
+            <div className="flex items-center justify-between py-2.5 px-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-transparent">
+              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Response Time</span>
+              <span className="text-sm font-bold text-slate-900 dark:text-white">
                 {health?.response_time_ms !== undefined ? `${health.response_time_ms} ms` : "—"}
               </span>
             </div>
@@ -164,55 +164,55 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
-          <h3 className="text-lg font-semibold text-white mb-5">Quick Actions</h3>
+        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 shadow-sm p-6">
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight mb-5">Quick Actions</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Link
               href="/admin/products"
-              className="flex items-center gap-3 px-5 py-4 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400 hover:bg-orange-500/20 transition group"
+              className="flex items-center gap-3 px-5 py-4 rounded-xl bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-500/20 hover:shadow-sm transition group"
             >
-              <div className="p-2 rounded-lg bg-orange-500/20 group-hover:bg-orange-500/30 transition">
+              <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-500/20 group-hover:bg-orange-200 dark:group-hover:bg-orange-500/30 transition">
                 <PlusIcon />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">Add Product</p>
-                <p className="text-xs text-slate-400">Create new listing</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">Add Product</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Create new listing</p>
               </div>
             </Link>
             <Link
               href="/admin/categories"
-              className="flex items-center gap-3 px-5 py-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition group"
+              className="flex items-center gap-3 px-5 py-4 rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-100 dark:border-blue-500/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-500/20 hover:shadow-sm transition group"
             >
-              <div className="p-2 rounded-lg bg-blue-500/20 group-hover:bg-blue-500/30 transition">
+              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-500/20 group-hover:bg-blue-200 dark:group-hover:bg-blue-500/30 transition">
                 <PlusIcon />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">Add Category</p>
-                <p className="text-xs text-slate-400">Organize products</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">Add Category</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Organize products</p>
               </div>
             </Link>
             <Link
               href="/admin/inquiries"
-              className="flex items-center gap-3 px-5 py-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 transition group"
+              className="flex items-center gap-3 px-5 py-4 rounded-xl bg-purple-50 dark:bg-purple-500/10 border border-purple-100 dark:border-purple-500/20 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-500/20 hover:shadow-sm transition group"
             >
-              <div className="p-2 rounded-lg bg-purple-500/20 group-hover:bg-purple-500/30 transition">
+              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-500/20 group-hover:bg-purple-200 dark:group-hover:bg-purple-500/30 transition">
                 <MessageIcon />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">View Inquiries</p>
-                <p className="text-xs text-slate-400">Customer messages</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">View Inquiries</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Customer messages</p>
               </div>
             </Link>
             <Link
               href="/admin/monitoring"
-              className="flex items-center gap-3 px-5 py-4 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20 transition group"
+              className="flex items-center gap-3 px-5 py-4 rounded-xl bg-green-50 dark:bg-green-500/10 border border-green-100 dark:border-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-500/20 hover:shadow-sm transition group"
             >
-              <div className="p-2 rounded-lg bg-green-500/20 group-hover:bg-green-500/30 transition">
+              <div className="p-2 rounded-lg bg-green-100 dark:bg-green-500/20 group-hover:bg-green-200 dark:group-hover:bg-green-500/30 transition">
                 <ActivityIcon />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">Monitoring</p>
-                <p className="text-xs text-slate-400">System health & logs</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">Monitoring</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">System health & logs</p>
               </div>
             </Link>
           </div>

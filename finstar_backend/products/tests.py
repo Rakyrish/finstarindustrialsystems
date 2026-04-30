@@ -316,3 +316,103 @@ class AdminImageUploadAPITests(TestCase):
             response.status_code,
             {status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN},
         )
+
+
+class AIGenerateProductAPITests(TestCase):
+    """Tests for POST /api/admin/ai/generate-product."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.staff_user = User.objects.create_user(
+            username="aistaff",
+            email="aistaff@example.com",
+            password="StrongPass123!",
+            is_staff=True,
+        )
+        token_response = self.client.post(
+            "/api/auth/token",
+            {"username": "aistaff", "password": "StrongPass123!"},
+            format="json",
+        )
+        self.admin_client = APIClient()
+        self.admin_client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {token_response.data['access']}"
+        )
+
+    def test_ai_generate_requires_admin(self):
+        """Unauthenticated requests are rejected."""
+        response = self.client.post(
+            "/api/admin/ai/generate-product",
+            {"image_url": "https://example.com/image.jpg"},
+            format="json",
+        )
+
+        self.assertIn(
+            response.status_code,
+            {status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN},
+        )
+
+    @patch("products.ai_service.generate_product_details")
+    def test_ai_generate_with_image_url(self, mock_generate):
+        """Providing an image_url triggers AI and returns product details."""
+        mock_generate.return_value = {
+            "name": "Industrial Compressor",
+            "short_description": "A heavy-duty compressor for industrial use.",
+            "description": "This compressor is designed for demanding environments...",
+        }
+
+        response = self.admin_client.post(
+            "/api/admin/ai/generate-product",
+            {"image_url": "https://example.com/compressor.jpg"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["name"], "Industrial Compressor")
+        self.assertIn("short_description", response.data)
+        self.assertIn("description", response.data)
+        mock_generate.assert_called_once_with("https://example.com/compressor.jpg")
+
+    @patch("products.ai_service.generate_product_details")
+    @patch("products.cloudinary_service.cloudinary.uploader.upload")
+    def test_ai_generate_with_image_file(self, mock_upload, mock_generate):
+        """Uploading a file triggers Cloudinary upload then AI generation."""
+        mock_upload.return_value = {
+            "secure_url": "https://res.cloudinary.com/demo/image/upload/v1/products/test.png"
+        }
+        mock_generate.return_value = {
+            "name": "HVAC Unit",
+            "short_description": "Efficient HVAC system.",
+            "description": "A top-of-the-line HVAC unit for commercial buildings...",
+        }
+
+        image = SimpleUploadedFile(
+            "hvac.png",
+            b"fake-image-content",
+            content_type="image/png",
+        )
+
+        response = self.admin_client.post(
+            "/api/admin/ai/generate-product",
+            {"image": image},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["name"], "HVAC Unit")
+        mock_upload.assert_called_once()
+        mock_generate.assert_called_once_with(
+            "https://res.cloudinary.com/demo/image/upload/v1/products/test.png"
+        )
+
+    def test_ai_generate_missing_input_returns_400(self):
+        """Sending neither file nor URL returns 400."""
+        response = self.admin_client.post(
+            "/api/admin/ai/generate-product",
+            {},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("required", response.data["detail"].lower())
+

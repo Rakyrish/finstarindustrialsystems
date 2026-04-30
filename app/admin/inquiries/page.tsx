@@ -50,43 +50,43 @@ export default function InquiriesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="border-b border-white/10 pb-6">
-        <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-          <div className="p-2 bg-orange-500/10 text-orange-500 rounded-lg">
+      <div className="border-b border-slate-200 dark:border-white/10 pb-6">
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+          <div className="p-2 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-500 rounded-lg">
              <MessageIcon />
           </div>
           Inquiries
         </h2>
-        <p className="text-sm text-slate-400 mt-2">View messages sent from the contact form</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">View messages sent from the contact form</p>
       </div>
 
       {error ? (
-        <div className="p-6 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl">{error}</div>
+        <div className="p-6 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-500 rounded-2xl">{error}</div>
       ) : loading ? (
-        <div className="py-20 text-center text-slate-400">Loading inquiries...</div>
+        <div className="py-20 text-center text-slate-500 dark:text-slate-400">Loading inquiries...</div>
       ) : inquiries.length === 0 ? (
-        <div className="py-16 text-center text-slate-400 border border-dashed border-white/20 rounded-2xl">
+        <div className="py-16 text-center text-slate-500 dark:text-slate-400 border border-dashed border-slate-300 dark:border-white/20 rounded-2xl">
           No inquiries found.
         </div>
       ) : (
         <div className="grid gap-6">
-           {inquiries.map((inq: Inquiry) => (
-              <div key={inq.id} className="bg-white/5 border border-white/10 p-6 rounded-2xl hover:border-white/20 transition shadow-sm">
-                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-4 border-b border-white/10">
+            {inquiries.map((inq: Inquiry) => (
+              <div key={inq.id} className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 p-6 rounded-2xl hover:border-slate-300 dark:hover:border-white/20 transition shadow-sm hover:shadow-md dark:hover:shadow-lg dark:shadow-none">
+                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-4 border-b border-slate-100 dark:border-white/10">
                     <div className="flex flex-wrap gap-4">
-                       <div className="flex items-center gap-2 text-sm font-medium text-white">
+                       <div className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
                           <UserIcon /> {inq.name}
                        </div>
-                       <a href={`mailto:${inq.email}`} className="flex items-center gap-2 text-sm text-orange-400 hover:text-orange-300 transition">
+                       <a href={`mailto:${inq.email}`} className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 transition">
                           <MailIcon /> {inq.email}
                        </a>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-900 px-3 py-1.5 rounded-lg border border-white/5">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-white/5">
                        <ClockIcon /> 
                        {new Date(inq.created_at || inq.createdAt || new Date().toISOString()).toLocaleString()}
                     </div>
                  </div>
-                 <p className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">
+                 <p className="text-slate-700 dark:text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">
                    {inq.message}
                  </p>
               </div>

@@ -391,3 +391,61 @@ class AdminErrorLogsView(APIView):
             )
 
         return Response({"logs": list(error_lines)})
+
+
+class AIGenerateProductView(APIView):
+    """
+    POST /api/admin/ai/generate-product
+
+    Accept an image file or image_url, analyse it with AI,
+    and return auto-generated product details.
+    """
+
+    permission_classes = [permissions.IsAdminUser]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
+
+    def post(self, request):
+        from .ai_service import AIServiceError, generate_product_details
+
+        image_url = None
+
+        # Option 1: uploaded file → push to Cloudinary first
+        file_obj = request.FILES.get("image")
+        if file_obj:
+            try:
+                image_url = upload_product_image(file_obj)
+            except CloudinaryConfigurationError as exc:
+                return Response(
+                    {"detail": str(exc)},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                )
+            except Exception:
+                logger.exception(
+                    "Cloudinary upload failed during AI generation for user_id=%s",
+                    request.user.id,
+                )
+                return Response(
+                    {"detail": "Image upload failed. Please try again."},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
+
+        # Option 2: URL supplied directly
+        if not image_url:
+            image_url = request.data.get("image_url")
+
+        if not image_url:
+            return Response(
+                {"detail": "An image file or image_url is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Call AI service
+        try:
+            details = generate_product_details(image_url)
+        except AIServiceError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        return Response(details, status=status.HTTP_200_OK)

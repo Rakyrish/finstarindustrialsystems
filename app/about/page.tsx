@@ -49,10 +49,10 @@ export default function AboutPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
             <span className="text-orange-500 font-semibold text-sm uppercase tracking-widest">Our Story</span>
-            <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 mt-2 mb-5 leading-tight">
+            <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 dark:text-white mt-2 mb-5 leading-tight">
               Powering Industry Across East Africa Since 2005
             </h2>
-            <div className="space-y-4 text-slate-600 leading-relaxed">
+            <div className="space-y-4 text-slate-600 dark:text-slate-400 leading-relaxed">
               <p>
                 Finstar Industrial Systems was founded in 2005 with a simple but powerful mission: to be the most
                 trusted supplier and installer of industrial cooling and heating systems in East Africa. What started
@@ -82,11 +82,11 @@ export default function AboutPage() {
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 text-center border border-blue-100"
+                className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-slate-800 rounded-2xl p-6 text-center border border-blue-100 dark:border-blue-900/50"
               >
                 <div className="text-3xl mb-2">{stat.icon}</div>
-                <div className="text-3xl font-extrabold text-blue-900">{stat.value}</div>
-                <div className="text-blue-700 text-sm mt-1 font-medium">{stat.label}</div>
+                <div className="text-3xl font-extrabold text-blue-900 dark:text-blue-400">{stat.value}</div>
+                <div className="text-blue-700 dark:text-blue-400 text-sm mt-1 font-medium">{stat.label}</div>
               </div>
             ))}
           </div>
@@ -94,7 +94,7 @@ export default function AboutPage() {
       </SectionWrapper>
 
       {/* Services */}
-      <SectionWrapper className="bg-slate-50">
+      <SectionWrapper className="bg-slate-50 dark:bg-slate-900/50">
         <SectionHeader
           subtitle="What We Do"
           title="Our Services"
@@ -104,15 +104,15 @@ export default function AboutPage() {
           {services.map((service) => (
             <div
               key={service.id}
-              className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-100 group"
+              className="bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all duration-300 border border-slate-100 dark:border-slate-800 group"
             >
-              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:bg-blue-100 transition-colors">
+              <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-2xl mb-4 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
                 {service.icon}
               </div>
-              <h3 className="font-bold text-slate-900 text-base mb-2 group-hover:text-blue-800 transition-colors">
+              <h3 className="font-bold text-slate-900 dark:text-white text-base mb-2 group-hover:text-blue-800 dark:group-hover:text-blue-400 transition-colors">
                 {service.title}
               </h3>
-              <p className="text-slate-500 text-sm leading-relaxed">{service.description}</p>
+              <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">{service.description}</p>
             </div>
           ))}
         </div>
@@ -174,12 +174,12 @@ export default function AboutPage() {
           ].map((val) => (
             <div
               key={val.title}
-              className="relative bg-white rounded-2xl p-6 border-2 border-slate-100 hover:border-orange-300 transition-all duration-300 group overflow-hidden"
+              className="relative bg-white dark:bg-slate-900 rounded-2xl p-6 border-2 border-slate-100 dark:border-slate-800 hover:border-orange-300 dark:hover:border-orange-700 transition-all duration-300 group overflow-hidden"
             >
               <div className="absolute top-0 left-0 w-1 h-full bg-orange-400 rounded-l-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="text-3xl mb-3">{val.icon}</div>
-              <h3 className="font-bold text-slate-900 mb-2 group-hover:text-blue-800 transition-colors">{val.title}</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">{val.text}</p>
+              <h3 className="font-bold text-slate-900 dark:text-white mb-2 group-hover:text-blue-800 dark:group-hover:text-blue-400 transition-colors">{val.title}</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">{val.text}</p>
             </div>
           ))}
         </div>
