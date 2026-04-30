@@ -6,6 +6,7 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
+    AIGenerateProductView,
     AdminCategoryDetailView,
     AdminCategoryListCreateView,
     AdminDashboardOverviewView,
@@ -58,4 +59,6 @@ urlpatterns = [
     path("admin/inquiries/", AdminInquiryListView.as_view()),
     path("admin/logs", AdminErrorLogsView.as_view(), name="admin-error-logs"),
     path("admin/logs/", AdminErrorLogsView.as_view()),
+    path("admin/ai/generate-product", AIGenerateProductView.as_view(), name="admin-ai-generate-product"),
+    path("admin/ai/generate-product/", AIGenerateProductView.as_view()),
 ]

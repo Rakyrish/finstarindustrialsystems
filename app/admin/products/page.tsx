@@ -22,14 +22,14 @@ function TableSkeleton() {
   return (
     <div className="animate-pulse">
       {[...Array(5)].map((_, i) => (
-        <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-white/5">
-          <div className="h-10 w-10 rounded-lg bg-slate-800" />
+        <div key={i} className="flex items-center gap-4 px-6 py-4 border-b border-slate-100 dark:border-white/5">
+          <div className="h-10 w-10 rounded-lg bg-slate-200 dark:bg-slate-800" />
           <div className="flex-1 space-y-2">
-            <div className="h-4 w-40 bg-slate-800 rounded" />
-            <div className="h-3 w-20 bg-slate-800 rounded" />
+            <div className="h-4 w-40 bg-slate-200 dark:bg-slate-800 rounded" />
+            <div className="h-3 w-20 bg-slate-200 dark:bg-slate-800 rounded" />
           </div>
-          <div className="h-6 w-16 bg-slate-800 rounded-lg" />
-          <div className="h-6 w-16 bg-slate-800 rounded-lg" />
+          <div className="h-6 w-16 bg-slate-200 dark:bg-slate-800 rounded-lg" />
+          <div className="h-6 w-16 bg-slate-200 dark:bg-slate-800 rounded-lg" />
         </div>
       ))}
     </div>
@@ -41,10 +41,12 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<ApiProduct[]>([]);
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>("");
 
   const [showForm, setShowForm] = useState(false);
-  const [editProduct, setEditProduct] = useState<ApiProduct | null>(null);
+  // Use undefined (not null) as the "no product selected" sentinel so
+  // ProductForm can distinguish "create" from "edit" without receiving null.
+  const [editProduct, setEditProduct] = useState<ApiProduct | undefined>(undefined);
 
   const fetchData = async () => {
     try {
@@ -52,10 +54,10 @@ export default function ProductsPage() {
       setError("");
       const [prodsData, catsData] = await Promise.all([
         getAdminProducts(),
-        getAdminCategories()
+        getAdminCategories(),
       ]);
-      setProducts(prodsData.results || []);
-      setCategories(catsData || []);
+      setProducts(prodsData.results ?? []);
+      setCategories(catsData ?? []);
     } catch {
       setError("Failed to load products.");
       addToast("Failed to load products", "error");
@@ -85,7 +87,7 @@ export default function ProductsPage() {
   };
 
   const handleAddNew = () => {
-    setEditProduct(null);
+    setEditProduct(undefined);
     setShowForm(true);
   };
 
@@ -96,28 +98,28 @@ export default function ProductsPage() {
 
   const handleFormSave = () => {
     setShowForm(false);
-    setEditProduct(null);
+    setEditProduct(undefined);
     fetchData();
   };
 
   const handleFormCancel = () => {
     setShowForm(false);
-    setEditProduct(null);
+    setEditProduct(undefined);
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 dark:border-white/10 pb-6">
         <div>
-          <h2 className="text-2xl font-bold text-white">Products</h2>
-          <p className="text-sm text-slate-400 mt-1">Manage your inventory and catalog</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Products</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage your inventory and catalog</p>
         </div>
         {!showForm && (
           <button
             onClick={handleAddNew}
             className="flex items-center gap-2 bg-orange-500 hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer"
           >
-            <PlusIcon /> Add Product
+            <PlusIcon /> Add Product in
           </button>
         )}
       </div>
@@ -125,6 +127,8 @@ export default function ProductsPage() {
       {showForm && (
         <ProductForm
           categories={categories}
+          // Pass undefined for new products so ProductForm initialises all
+          // controlled inputs with empty strings, not undefined/null.
           product={editProduct}
           onSave={handleFormSave}
           onCancel={handleFormCancel}
@@ -132,7 +136,7 @@ export default function ProductsPage() {
       )}
 
       {!showForm && (
-        <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-sm">
+        <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl overflow-hidden shadow-sm">
           {error ? (
             <div className="p-6 text-red-500">{error}</div>
           ) : loading ? (
@@ -140,7 +144,7 @@ export default function ProductsPage() {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-slate-900/50 text-slate-300 font-medium">
+                <thead className="bg-slate-50 dark:bg-slate-900/50 text-slate-600 dark:text-slate-300 font-semibold border-b border-slate-200 dark:border-white/10">
                   <tr>
                     <th className="px-6 py-4">Product</th>
                     <th className="px-6 py-4">Category</th>
@@ -148,37 +152,41 @@ export default function ProductsPage() {
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                   {products.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-800/50 transition">
+                    <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
                       <td className="px-6 py-4 flex items-center gap-4">
-                        <div className="h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-slate-900 border border-white/10">
+                        <div className="h-10 w-10 shrink-0 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-white/10">
                           {p.image_url ? (
                             <div className="relative h-full w-full">
                               <Image src={p.image_url} alt={p.name} fill className="object-cover" sizes="40px" />
                             </div>
                           ) : (
-                            <div className="h-full w-full flex items-center justify-center text-slate-600 text-xs">No img</div>
+                            <div className="h-full w-full flex items-center justify-center text-slate-400 dark:text-slate-600 text-xs">No img</div>
                           )}
                         </div>
                         <div>
-                          <div className="font-medium text-white">{p.name}</div>
-                          {p.featured && <span className="text-[10px] uppercase font-bold text-orange-400 tracking-wider">Featured</span>}
+                          <div className="font-bold text-slate-900 dark:text-white">{p.name}</div>
+                          {p.featured && (
+                            <span className="text-[10px] uppercase font-bold text-orange-600 dark:text-orange-400 tracking-wider">
+                              Featured
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="text-slate-300 bg-slate-800 px-2.5 py-1 rounded-lg text-xs font-medium">
-                          {p.category?.name || "None"}
+                        <span className="text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg text-xs font-medium">
+                          {p.category?.name ?? "None"}
                         </span>
                       </td>
                       <td className="px-6 py-4">
                         {p.is_active ? (
                           <span className="inline-flex items-center gap-1.5 text-green-400 bg-green-400/10 px-2.5 py-1 rounded-lg text-xs font-medium">
-                            <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div> Active
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-400" /> Active
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5 text-slate-400 bg-slate-400/10 px-2.5 py-1 rounded-lg text-xs font-medium">
-                            <div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div> Inactive
+                            <div className="w-1.5 h-1.5 rounded-full bg-slate-400" /> Inactive
                           </span>
                         )}
                       </td>
@@ -186,14 +194,14 @@ export default function ProductsPage() {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => handleEdit(p)}
-                            className="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition cursor-pointer"
+                            className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer"
                             title="Edit product"
                           >
                             <EditIcon />
                           </button>
                           <button
                             onClick={() => handleDelete(p.id)}
-                            className="p-2 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition cursor-pointer"
+                            className="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-400/10 transition cursor-pointer"
                             title="Deactivate product"
                           >
                             <TrashIcon />
@@ -204,7 +212,7 @@ export default function ProductsPage() {
                   ))}
                   {products.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="px-6 py-16 text-center text-slate-400">
+                      <td colSpan={4} className="px-6 py-16 text-center text-slate-500 dark:text-slate-400">
                         No products found. Add some to get started.
                       </td>
                     </tr>

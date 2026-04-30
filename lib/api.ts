@@ -348,3 +348,27 @@ export async function uploadAdminImage(file: File) {
     body: formData,
   });
 }
+
+export interface AIProductResponse {
+  name: string;
+  short_description: string;
+  description: string;
+}
+
+export async function generateProductWithAI(input: File | string): Promise<AIProductResponse> {
+  if (input instanceof File) {
+    const formData = new FormData();
+    formData.append("image", input);
+    return authFetchAPI<AIProductResponse>("/admin/ai/generate-product", {
+      method: "POST",
+      body: formData,
+    });
+  }
+
+  return authFetchAPI<AIProductResponse>("/admin/ai/generate-product", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ image_url: input }),
+  });
+}
+

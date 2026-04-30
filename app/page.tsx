@@ -1,10 +1,9 @@
-
 import type { Metadata } from "next";
 import Link from "next/link";
 import CategoryCard from "@/components/CategoryCard";
 import EmptyState from "@/components/EmptyState";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/JsonLd";
-import ProductCard from "@/components/ProductCard";
+import FeaturedProducts from "@/components/FeaturedProducts";
 import SectionWrapper, { SectionHeader } from "@/components/SectionWrapper";
 import { getCategories, getProducts } from "@/lib/api";
 import { services } from "@/lib/data";
@@ -89,7 +88,7 @@ export default async function HomePage() {
         <div className="relative z-10 mx-auto max-w-7xl px-4 py-32 text-center sm:px-6 lg:px-8 lg:py-40">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-700/50 bg-blue-800/60 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-blue-200 backdrop-blur-sm">
             <span className="h-2 w-2 animate-pulse rounded-full bg-orange-400" />
-            Industrial Excellence Since 2005
+            Industrial Excellence
           </div>
 
           <h1 className="mb-6 text-4xl leading-tight font-extrabold text-white sm:text-5xl lg:text-7xl">
@@ -136,7 +135,6 @@ export default async function HomePage() {
           <div className="mx-auto mt-16 grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-4">
             {[
               { value: "500+", label: "Clients Served" },
-              { value: "20+", label: "Years Experience" },
               { value: "5", label: "Product Categories" },
               { value: "24/7", label: "Support Available" },
             ].map((stat) => (
@@ -162,7 +160,29 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <SectionWrapper className="bg-slate-50">
+      <SectionWrapper>
+        <SectionHeader
+          subtitle="Top Picks"
+          title="Featured Products"
+          description="Explore our most popular industrial equipment trusted by leading companies across East Africa."
+        />
+
+        {featuredProducts.length > 0 ? (
+          <FeaturedProducts
+            featuredProducts={featuredProducts}
+            categories={categories}
+          />
+        ) : (
+          <EmptyState
+            title={hasApiError ? "Failed to load products" : "No featured products yet"}
+            description="Featured equipment will appear here after products are published in the backend."
+            icon="🏭"
+            action={{ label: "View Catalog", href: "/products" }}
+          />
+        )}
+      </SectionWrapper>
+
+      <SectionWrapper className="bg-slate-50 dark:bg-slate-900/50">
         <SectionHeader
           subtitle="What We Offer"
           title="Our Product Categories"
@@ -180,46 +200,6 @@ export default async function HomePage() {
             description="The product categories will appear here once the backend data is available."
             icon="📦"
             action={{ label: "Browse Products", href: "/products" }}
-          />
-        )}
-      </SectionWrapper>
-
-      <SectionWrapper>
-        <SectionHeader
-          subtitle="Top Picks"
-          title="Featured Products"
-          description="Explore our most popular industrial equipment trusted by leading companies across East Africa."
-        />
-        {featuredProducts.length > 0 ? (
-          <>
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {featuredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-            <div className="mt-10 text-center">
-              <Link
-                href="/products"
-                className="inline-flex items-center gap-2 rounded-xl border-2 border-blue-800 px-8 py-3.5 font-semibold text-blue-800 transition-all duration-200 hover:bg-blue-800 hover:text-white"
-              >
-                View All Products
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </Link>
-            </div>
-          </>
-        ) : (
-          <EmptyState
-            title={hasApiError ? "Failed to load products" : "No featured products yet"}
-            description="Featured equipment will appear here after products are published in the backend."
-            icon="🏭"
-            action={{ label: "View Catalog", href: "/products" }}
           />
         )}
       </SectionWrapper>
@@ -249,7 +229,7 @@ export default async function HomePage() {
         </div>
       </SectionWrapper>
 
-      <SectionWrapper className="bg-white">
+      <SectionWrapper className="bg-white dark:bg-slate-900">
         <SectionHeader
           subtitle="Why Finstar"
           title="Built for Industry, Trusted by Business"
@@ -280,13 +260,13 @@ export default async function HomePage() {
           ].map((item) => (
             <div
               key={item.title}
-              className="group rounded-2xl bg-slate-50 p-6 text-center transition-colors duration-300 hover:bg-blue-50"
+              className="group rounded-2xl bg-slate-50 dark:bg-slate-800 p-6 text-center transition-colors duration-300 hover:bg-blue-50 dark:hover:bg-slate-700"
             >
               <div className="mb-4 text-4xl">{item.icon}</div>
-              <h3 className="mb-2 font-bold text-slate-900 transition-colors group-hover:text-blue-800">
+              <h3 className="mb-2 font-bold text-slate-900 dark:text-white transition-colors group-hover:text-blue-800 dark:group-hover:text-blue-400">
                 {item.title}
               </h3>
-              <p className="text-sm leading-relaxed text-slate-500">{item.text}</p>
+              <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">{item.text}</p>
             </div>
           ))}
         </div>
@@ -301,6 +281,7 @@ export default async function HomePage() {
               "radial-gradient(circle at 25% 50%, white 0%, transparent 50%), radial-gradient(circle at 75% 50%, white 0%, transparent 50%)",
           }}
         />
+
         <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
           <h2 className="mb-4 text-3xl font-extrabold text-white lg:text-4xl">
             Ready to Upgrade Your Industrial Systems?
@@ -322,8 +303,23 @@ export default async function HomePage() {
             >
               Browse Products
             </Link>
+            <a
+              href="https://www.google.com/maps/place/Finstar+Industrial+Systems+Ltd/@-1.3050988,36.8390376,837m/data=!3m2!1e3!4b1!4m6!3m5!1s0x182f11c670b98d43:0x6f348874e48071b5!8m2!3d-1.3050988!4d36.8390376!16s%2Fg%2F11x8c2x1hk?entry=ttu&g_ep=EgoyMDI2MDQyNy4wIKXMDSoASAFQAw%3D%3D"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/30 bg-white/10 px-8 py-4 text-base font-bold text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/20"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Map
+            </a>
           </div>
         </div>
+
       </section>
     </>
   );

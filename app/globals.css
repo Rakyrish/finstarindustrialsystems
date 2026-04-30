@@ -1,43 +1,105 @@
 @import "tailwindcss";
 
+/* ─── Dark mode via class strategy ──────────────────────────────────────── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─── Design tokens ─────────────────────────────────────────────────────── */
 @layer base {
   :root {
+    /* Brand */
     --color-primary: #0f4c81;
     --color-primary-dark: #0a3560;
     --color-primary-light: #1a6cb8;
     --color-accent: #f97316;
     --color-accent-dark: #ea6c0c;
+
+    /* Light theme surfaces */
+    --bg-base: #f8fafc;
+    --bg-card: #ffffff;
+    --bg-card-hover: #f1f5f9;
+    --bg-subtle: #f1f5f9;
+    --bg-input: #f8fafc;
+
+    /* Light theme text */
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+
+    /* Light theme borders */
+    --border-default: #e2e8f0;
+    --border-subtle: #f1f5f9;
+
+    /* Legacy compat */
     --color-surface: #f8fafc;
     --color-text: #0f172a;
     --color-text-muted: #64748b;
   }
 
+  /* ─── Dark theme overrides ──────────────────────────────────────────────── */
+  .dark {
+    --bg-base: #0f172a;
+    --bg-card: #1e293b;
+    --bg-card-hover: #263246;
+    --bg-subtle: #1e293b;
+    --bg-input: #1e293b;
+
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+
+    --border-default: #334155;
+    --border-subtle: #1e293b;
+  }
+
+  /* ─── Global reset ──────────────────────────────────────────────────────── */
   * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
   }
 
-  html {
+  html,
+  body {
     scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
     font-family: var(--font-inter, system-ui, sans-serif);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Smooth color transitions on theme switch — applied globally */
+  *,
+  *::before,
+  *::after {
+    transition-property: background-color, border-color, color, box-shadow, opacity;
+    transition-duration: 0.25s;
+    transition-timing-function: ease;
+  }
+
+  /* Opt-out for elements that manage their own animation */
+  .no-transition,
+  .no-transition * {
+    transition: none !important;
   }
 }
 
+/* ─── Utilities ─────────────────────────────────────────────────────────── */
 @layer utilities {
   .gradient-primary {
     background: linear-gradient(135deg, #0f4c81 0%, #1a6cb8 50%, #0d5fa0 100%);
   }
 
   .gradient-hero {
-    background: linear-gradient(135deg,
-        rgba(15, 76, 129, 0.97) 0%,
-        rgba(10, 53, 96, 0.95) 60%,
-        rgba(15, 76, 129, 0.9) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(15, 76, 129, 0.97) 0%,
+      rgba(10, 53, 96, 0.95) 60%,
+      rgba(15, 76, 129, 0.9) 100%
+    );
   }
 
   .text-gradient {
@@ -70,4 +132,218 @@
   .btn-outline {
     @apply inline-flex items-center justify-center gap-2 px-6 py-3 bg-transparent text-blue-800 font-semibold rounded-lg border-2 border-blue-800 hover:bg-blue-800 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-2;
   }
+
+  /* Dark-mode aware card */
+  .themed-card {
+    background-color: var(--bg-card);
+    border-color: var(--border-default);
+    color: var(--text-primary);
+  }
+}
+
+/* ─── Product HTML Content (AI-generated) ───────────────────────────────── */
+/* Scoped styles for rendering structured AI descriptions safely            */
+
+.product-content {
+  color: var(--text-primary);
+  line-height: 1.75;
+  font-size: 1rem;
+}
+
+/* ── Section Headings ─────────────────────────────────────────────────── */
+.product-content h2 {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 1.15rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.75rem;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.product-content h3 {
+  background: linear-gradient(135deg, #fb923c, #f97316);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1.05rem;
+  padding: 0.6rem 1rem;
+  border-radius: 0.625rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.product-content h2:first-child,
+.product-content h3:first-child {
+  margin-top: 0;
+}
+
+/* ── Tables ───────────────────────────────────────────────────────────── */
+.product-content table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--border-default);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  font-size: 0.938rem;
+}
+
+.product-content thead th {
+  background: linear-gradient(135deg, #0f4c81, #1a6cb8);
+  color: #ffffff;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.875rem 1.25rem;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.product-content tbody td {
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--border-default);
+  vertical-align: top;
+}
+
+.product-content tbody td:first-child {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  width: 35%;
+}
+
+.product-content tbody td:last-child {
+  color: var(--text-secondary);
+}
+
+/* Alternating row colours */
+.product-content tbody tr:nth-child(odd) {
+  background-color: var(--bg-card);
+}
+
+.product-content tbody tr:nth-child(even) {
+  background-color: var(--bg-subtle);
+}
+
+.product-content tbody tr:hover {
+  background-color: color-mix(in srgb, var(--color-accent) 8%, var(--bg-card));
+}
+
+/* Responsive table — horizontal scroll on small screens */
+@media (max-width: 640px) {
+  .product-content table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .product-content tbody td:first-child {
+    white-space: normal;
+    width: auto;
+    min-width: 120px;
+  }
+}
+
+/* ── Lists ────────────────────────────────────────────────────────────── */
+.product-content ul,
+.product-content ol {
+  margin: 0.75rem 0 1.5rem 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.product-content ul li,
+.product-content ol li {
+  position: relative;
+  padding: 0.5rem 0 0.5rem 1.75rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.product-content ul li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.9rem;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+}
+
+.product-content ol {
+  counter-reset: product-list;
+}
+
+.product-content ol li::before {
+  counter-increment: product-list;
+  content: counter(product-list);
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f97316, #ea580c);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-content li strong {
+  color: var(--text-primary);
+}
+
+/* ── Paragraphs ───────────────────────────────────────────────────────── */
+.product-content p {
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  line-height: 1.75;
+}
+
+.product-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Links ────────────────────────────────────────────────────────────── */
+.product-content a {
+  color: #0f4c81;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s ease;
+}
+
+.product-content a:hover {
+  color: #f97316;
+}
+
+/* ── Strong / bold ────────────────────────────────────────────────────── */
+.product-content strong {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+/* ── Dark mode adjustments ────────────────────────────────────────────── */
+:where(.dark) .product-content a {
+  color: #60a5fa;
+}
+
+:where(.dark) .product-content a:hover {
+  color: #fb923c;
+}
+
+:where(.dark) .product-content thead th {
+  background: linear-gradient(135deg, #1e3a5f, #0f4c81);
+}
+
+:where(.dark) .product-content tbody tr:hover {
+  background-color: color-mix(in srgb, var(--color-accent) 10%, var(--bg-card));
 }

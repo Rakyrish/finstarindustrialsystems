@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { submitInquiry } from "@/lib/api";
+import { message } from "antd"
 
 interface FormData {
   name: string;
@@ -92,6 +93,12 @@ export default function ContactForm() {
     setStatus("submitting");
     setErrorMessage("");
 
+    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
+      setStatus("error");
+      message.error("Please fill in all required fields!");
+      return;
+    }
+
     try {
       await submitInquiry({
         name: form.name.trim(),
@@ -101,8 +108,10 @@ export default function ContactForm() {
 
       setStatus("success");
       setForm(initialForm);
+      message.success("Message sent successfully!");
     } catch (error) {
       setStatus("error");
+      message.error("Error sending message!");
       setErrorMessage(
         error instanceof Error
           ? error.message
@@ -113,12 +122,12 @@ export default function ContactForm() {
 
   if (status === "success") {
     return (
-      <div className="rounded-2xl border border-green-200 bg-green-50 p-10 text-center">
+      <div className="rounded-2xl border border-green-200 dark:border-green-900/50 bg-green-50 dark:bg-green-900/20 p-10 text-center">
         <div className="mb-4 text-5xl">✅</div>
-        <h3 className="mb-2 text-xl font-bold text-green-800">
+        <h3 className="mb-2 text-xl font-bold text-green-800 dark:text-green-400">
           Message Sent Successfully
         </h3>
-        <p className="mb-6 text-sm text-green-700">
+        <p className="mb-6 text-sm text-green-700 dark:text-green-500">
           Thank you for reaching out. Our team will get back to you within 24
           hours.
         </p>
@@ -165,7 +174,7 @@ export default function ContactForm() {
           type="text"
           value={form.company}
           onChange={handleChange}
-          placeholder="Acme Industries Ltd"
+          placeholder="Finstar Industrial Systems Ltd"
         />
         <FormField
           label="Phone Number"
@@ -179,7 +188,7 @@ export default function ContactForm() {
       </div>
 
       <div>
-        <label htmlFor="subject" className="mb-1.5 block text-sm font-semibold text-slate-700">
+        <label htmlFor="subject" className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">
           Subject <span className="text-red-500">*</span>
         </label>
         <select
@@ -188,7 +197,7 @@ export default function ContactForm() {
           value={form.subject}
           onChange={handleChange}
           required
-          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
         >
           <option value="">Select a subject...</option>
           <option value="refrigeration">Refrigeration Systems</option>
@@ -202,7 +211,7 @@ export default function ContactForm() {
       </div>
 
       <div>
-        <label htmlFor="message" className="mb-1.5 block text-sm font-semibold text-slate-700">
+        <label htmlFor="message" className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">
           Message <span className="text-red-500">*</span>
         </label>
         <textarea
@@ -213,13 +222,13 @@ export default function ContactForm() {
           rows={5}
           required
           placeholder="Tell us about your project or inquiry..."
-          className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          className="w-full resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
         />
       </div>
 
       {status === "error" ? (
         <div
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-3 text-sm text-red-700 dark:text-red-400"
           role="alert"
         >
           {errorMessage}
@@ -277,7 +286,7 @@ function FormField({
 }) {
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-slate-700">
+      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-slate-700 dark:text-slate-300">
         {label} {required ? <span className="text-red-500">*</span> : null}
       </label>
       <input
@@ -288,7 +297,7 @@ function FormField({
         onChange={onChange}
         placeholder={placeholder}
         required={required}
-        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+        className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:outline-none"
       />
     </div>
   );

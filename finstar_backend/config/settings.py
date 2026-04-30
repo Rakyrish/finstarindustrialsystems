@@ -187,6 +187,9 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
         secure=True,
     )
 
+# ── OpenAI (AI product generation) ───────────────────────────────────────────
+OPENAI_API_KEY = config("OPENAI_API_KEY", default="")
+
 # ── Log directory ─────────────────────────────────────────────────────────────
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)

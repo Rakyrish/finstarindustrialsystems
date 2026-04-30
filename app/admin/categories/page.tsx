@@ -254,10 +254,10 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 dark:border-white/10 pb-6">
         <div>
-          <h2 className="text-2xl font-bold text-white">Categories</h2>
-          <p className="text-sm text-slate-400 mt-1">Manage product categories</p>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">Categories</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Manage product categories</p>
         </div>
         <button
           onClick={handleToggleAdd}
@@ -268,17 +268,17 @@ export default function CategoriesPage() {
       </div>
 
       {showAdd && (
-        <div className="bg-slate-900/80 border border-white/10 p-6 rounded-2xl space-y-6">
+        <div className="bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-white/10 p-6 rounded-2xl space-y-6 shadow-lg dark:shadow-none">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-white">Create New Category</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Create New Category</h3>
             {/* Mode toggle */}
-            <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-lg text-sm">
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-lg text-sm">
               <button
                 type="button"
                 onClick={() => { setCreateMode("preset"); resetForm(); }}
                 className={`px-3 py-1.5 rounded-md font-medium transition cursor-pointer ${createMode === "preset"
-                  ? "bg-orange-500 text-white"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-orange-500 text-white shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
               >
                 From Preset
@@ -287,8 +287,8 @@ export default function CategoriesPage() {
                 type="button"
                 onClick={() => { setCreateMode("custom"); resetForm(); }}
                 className={`px-3 py-1.5 rounded-md font-medium transition cursor-pointer ${createMode === "custom"
-                  ? "bg-orange-500 text-white"
-                  : "text-slate-400 hover:text-white"
+                  ? "bg-orange-500 text-white shadow-sm"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
                   }`}
               >
                 Custom
@@ -299,7 +299,7 @@ export default function CategoriesPage() {
           <form onSubmit={handleCreate} className="space-y-5">
             {createMode === "preset" ? (
               <div>
-                <p className="text-sm text-slate-400 mb-3">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
                   Select a standard industry category to add to your catalog.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-96 overflow-y-auto pr-1">
@@ -310,15 +310,15 @@ export default function CategoriesPage() {
                       disabled={preset.alreadyExists}
                       onClick={() => setSelectedPreset(preset.index)}
                       className={`flex items-start gap-3 p-3 rounded-xl border text-left transition cursor-pointer ${preset.alreadyExists
-                        ? "border-white/5 bg-slate-800/30 opacity-40 cursor-not-allowed"
+                        ? "border-slate-100 dark:border-white/5 bg-slate-50 dark:bg-slate-800/30 opacity-40 cursor-not-allowed"
                         : selectedPreset === preset.index
-                          ? "border-orange-500 bg-orange-500/10"
-                          : "border-white/10 bg-slate-800/50 hover:border-white/20 hover:bg-slate-800"
+                          ? "border-orange-500 bg-orange-50 dark:bg-orange-500/10 shadow-sm"
+                          : "border-slate-200 dark:border-white/10 bg-white dark:bg-slate-800/50 hover:border-slate-300 dark:hover:border-white/20 hover:bg-slate-50 dark:hover:bg-slate-800"
                         }`}
                     >
                       <span className="text-2xl shrink-0 mt-0.5">{preset.icon}</span>
                       <div className="min-w-0">
-                        <div className="text-sm font-medium text-white leading-snug">
+                        <div className="text-sm font-bold text-slate-900 dark:text-white leading-snug">
                           {preset.name}
                           {preset.alreadyExists && (
                             <span className="ml-2 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
@@ -337,25 +337,25 @@ export default function CategoriesPage() {
             ) : (
               <div className="space-y-4 max-w-xl">
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-orange-500 focus:bg-slate-900 outline-none transition"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-orange-500 focus:bg-white dark:focus:bg-slate-900 outline-none transition"
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                     placeholder="e.g. Generators"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Icon <span className="text-slate-500 font-normal">(emoji)</span>
                   </label>
                   <input
                     type="text"
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-orange-500 focus:bg-slate-900 outline-none transition"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-orange-500 focus:bg-white dark:focus:bg-slate-900 outline-none transition"
                     value={newIcon}
                     onChange={(e) => setNewIcon(e.target.value)}
                     placeholder="e.g. ⚡"
@@ -363,11 +363,11 @@ export default function CategoriesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Description
                   </label>
                   <textarea
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:border-orange-500 focus:bg-slate-900 outline-none transition resize-none"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:border-orange-500 focus:bg-white dark:focus:bg-slate-900 outline-none transition resize-none"
                     rows={3}
                     value={newDesc}
                     onChange={(e) => setNewDesc(e.target.value)}
@@ -388,7 +388,7 @@ export default function CategoriesPage() {
               <button
                 type="button"
                 onClick={handleToggleAdd}
-                className="text-slate-400 hover:text-white px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer"
+                className="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white px-4 py-2.5 rounded-xl text-sm font-medium transition cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 Cancel
               </button>
@@ -398,17 +398,17 @@ export default function CategoriesPage() {
       )}
 
       {error ? (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl">{error}</div>
+        <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-500 p-4 rounded-xl">{error}</div>
       ) : loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6 animate-pulse">
+            <div key={i} className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 animate-pulse shadow-sm">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 rounded-xl bg-slate-800" />
-                <div className="h-5 w-32 bg-slate-800 rounded" />
+                <div className="w-11 h-11 rounded-xl bg-slate-200 dark:bg-slate-800" />
+                <div className="h-5 w-32 bg-slate-200 dark:bg-slate-800 rounded" />
               </div>
-              <div className="h-4 w-48 bg-slate-800 rounded mb-4" />
-              <div className="h-6 w-20 bg-slate-800 rounded-lg" />
+              <div className="h-4 w-48 bg-slate-200 dark:bg-slate-800 rounded mb-4" />
+              <div className="h-6 w-20 bg-slate-200 dark:bg-slate-800 rounded-lg" />
             </div>
           ))}
         </div>
@@ -419,35 +419,35 @@ export default function CategoriesPage() {
             const canDelete = productCount === 0;
 
             return (
-              <div key={cat.id} className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition flex flex-col gap-4 group">
+              <div key={cat.id} className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl p-6 hover:border-slate-300 dark:hover:border-white/20 transition flex flex-col gap-4 group shadow-sm hover:shadow-md dark:hover:shadow-lg dark:shadow-none">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="bg-slate-800 p-3 rounded-xl text-orange-500 shrink-0">
+                    <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-xl text-orange-500 shrink-0">
                       {cat.icon ? (
                         <span className="text-xl">{cat.icon}</span>
                       ) : (
                         <FolderIcon />
                       )}
                     </div>
-                    <h4 className="text-base font-semibold text-white line-clamp-2 leading-snug">{cat.name}</h4>
+                    <h4 className="text-base font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug">{cat.name}</h4>
                   </div>
                   <button
                     onClick={() => handleDelete(cat.id, cat.name, productCount)}
                     disabled={deletingId === cat.id}
                     className={`p-2 rounded-lg transition cursor-pointer shrink-0 ${canDelete
-                      ? "text-slate-500 hover:text-red-400 hover:bg-red-400/10 opacity-0 group-hover:opacity-100"
-                      : "text-slate-700 cursor-not-allowed"
+                      ? "text-slate-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-400/10 opacity-0 group-hover:opacity-100"
+                      : "text-slate-300 dark:text-slate-700 cursor-not-allowed"
                       } ${deletingId === cat.id ? "opacity-50" : ""}`}
                     title={canDelete ? "Delete category" : `Cannot delete — has ${productCount} product(s)`}
                   >
                     <TrashIcon />
                   </button>
                 </div>
-                <p className="text-sm text-slate-400 flex-1 line-clamp-2">
+                <p className="text-sm text-slate-500 dark:text-slate-400 flex-1 line-clamp-2">
                   {cat.description || "No description provided."}
                 </p>
-                <div className="pt-4 border-t border-white/10">
-                  <span className="text-xs font-medium text-slate-300 bg-slate-800 px-3 py-1.5 rounded-lg inline-block">
+                <div className="pt-4 border-t border-slate-200 dark:border-white/10">
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg inline-block">
                     {productCount} Products
                   </span>
                 </div>
@@ -455,7 +455,7 @@ export default function CategoriesPage() {
             );
           })}
           {categories.length === 0 && !loading && (
-            <div className="col-span-full py-16 text-center text-slate-400 border border-dashed border-white/20 rounded-2xl">
+            <div className="col-span-full py-16 text-center text-slate-500 dark:text-slate-400 border border-dashed border-slate-300 dark:border-white/20 rounded-2xl">
               No categories found. Click &apos;Add Category&apos; to create one.
             </div>
           )}

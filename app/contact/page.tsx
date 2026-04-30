@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import ContactForm from "./ContactForm";
 
+import ContactButtons from "@/components/ContactButtons";
+
 export const metadata: Metadata = {
   title: "Contact Us – Get a Free Quote for Industrial Equipment",
   description:
@@ -62,6 +64,9 @@ export default function ContactPage() {
                   label="Address"
                   value="Industrial Area, Enterprise Road, Nairobi, Kenya"
                 />
+
+
+
                 <ContactInfoItem
                   icon={
                     <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -69,8 +74,8 @@ export default function ContactPage() {
                     </svg>
                   }
                   label="Phone"
-                  value="+254 700 123 456"
-                  href="tel:+254700123456"
+                  value="+254 726 559 606"
+                  href="tel:+254726559606"
                 />
                 <ContactInfoItem
                   icon={
@@ -91,23 +96,40 @@ export default function ContactPage() {
                   label="Working Hours"
                   value="Mon–Fri: 8am–6pm | Sat: 9am–1pm"
                 />
+
+                <ContactButtons />
+
+                <a
+                  href="https://www.google.com/maps/place/Finstar+Industrial+Systems+Ltd/@-1.3050988,36.8390376,837m/data=!3m2!1e3!4b1!4m6!3m5!1s0x182f11c670b98d43:0x6f348874e48071b5!8m2!3d-1.3050988!4d36.8390376!16s%2Fg%2F11x8c2x1hk?entry=ttu&g_ep=EgoyMDI2MDQyNy4wIKXMDSoASAFQAw%3D%3D"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/30 bg-white/10 px-8 py-4 text-base font-bold text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/20"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Map
+                </a>
               </div>
             </div>
 
             {/* Emergency */}
-            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-6">
+            <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-900/50 rounded-2xl p-6">
               <div className="flex items-start gap-3">
                 <span className="text-2xl">⚡</span>
                 <div>
                   <h3 className="font-bold text-orange-800 mb-1">Emergency Support</h3>
-                  <p className="text-orange-700 text-sm mb-3">
+                  <p className="text-orange-700 dark:text-orange-400 text-sm mb-3">
                     24/7 emergency breakdown support available for critical systems.
                   </p>
                   <a
-                    href="tel:+254700999000"
-                    className="inline-flex items-center gap-1.5 text-orange-600 font-bold text-sm hover:text-orange-700"
+                    href="tel:+254726559606"
+                    className="inline-flex items-center gap-1.5 text-orange-600 dark:text-orange-400 font-bold text-sm hover:text-orange-700 dark:hover:text-orange-300"
                   >
-                    +254 700 999 000
+                    +254 726 559 606
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
@@ -117,7 +139,8 @@ export default function ContactPage() {
             </div>
 
             {/* Map Placeholder */}
-            <div className="bg-gradient-to-br from-slate-200 to-slate-300 rounded-2xl overflow-hidden aspect-video shadow-lg">
+            {/* Map */}
+            <div className="bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-800 dark:to-slate-900 rounded-2xl overflow-hidden aspect-video shadow-lg">
               <iframe
                 width="100%"
                 height="100%"
@@ -125,25 +148,25 @@ export default function ContactPage() {
                 loading="lazy"
                 allowFullScreen
                 referrerPolicy="no-referrer-when-downgrade"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15955.161200155627!2d36.8407421!3d-1.3028608!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f111000000001%3A0x0!2sIndustrial%20Area%2C%20Nairobi!5e0!3m2!1sen!2ske!4v1640000000000!5m2!1sen!2ske"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.8565!2d36.8390376!3d-1.3050988!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f11c670b98d43%3A0x6f348874e48071b5!2sFinstar%20Industrial%20Systems%20Ltd!5e0!3m2!1sen!2ske!4v1680000000000!5m2!1sen!2ske"
               ></iframe>
             </div>
           </div>
 
           {/* Form */}
-          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-7 lg:p-10">
-            <h2 className="text-2xl font-bold text-slate-900 mb-2">Send Us a Message</h2>
-            <p className="text-slate-500 text-sm mb-7">
+          <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-7 lg:p-10">
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Send Us a Message</h2>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-7">
               Fill in the form and our team will get back to you within 24 hours.
             </p>
 
             {/* The fix: Wrap the component that uses useSearchParams in Suspense */}
             <Suspense fallback={
               <div className="space-y-4 animate-pulse">
-                <div className="h-10 bg-slate-100 rounded-lg w-full"></div>
-                <div className="h-10 bg-slate-100 rounded-lg w-full"></div>
-                <div className="h-32 bg-slate-100 rounded-lg w-full"></div>
-                <div className="h-12 bg-orange-200 rounded-lg w-1/3"></div>
+                <div className="h-10 bg-slate-100 dark:bg-slate-800 rounded-lg w-full"></div>
+                <div className="h-10 bg-slate-100 dark:bg-slate-800 rounded-lg w-full"></div>
+                <div className="h-32 bg-slate-100 dark:bg-slate-800 rounded-lg w-full"></div>
+                <div className="h-12 bg-orange-200 dark:bg-orange-900/50 rounded-lg w-1/3"></div>
               </div>
             }>
               <ContactForm />

@@ -1,0 +1,60 @@
+Collecting openai
+  Downloading openai-2.32.0-py3-none-any.whl.metadata (31 kB)
+Collecting anyio<5,>=3.5.0 (from openai)
+  Using cached anyio-4.13.0-py3-none-any.whl.metadata (4.5 kB)
+Collecting distro<2,>=1.7.0 (from openai)
+  Downloading distro-1.9.0-py3-none-any.whl.metadata (6.8 kB)
+Collecting httpx<1,>=0.23.0 (from openai)
+  Downloading httpx-0.28.1-py3-none-any.whl.metadata (7.1 kB)
+Collecting jiter<1,>=0.10.0 (from openai)
+  Downloading jiter-0.14.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (5.2 kB)
+Collecting pydantic<3,>=1.9.0 (from openai)
+  Downloading pydantic-2.13.3-py3-none-any.whl.metadata (108 kB)
+     ━━ 1… 5… eta 0:…
+        kB k…        
+Collecting sniffio (from openai)
+  Downloading sniffio-1.3.1-py3-none-any.whl.metadata (3.9 kB)
+Collecting tqdm>4 (from openai)
+  Using cached tqdm-4.67.3-py3-none-any.whl.metadata (57 kB)
+Collecting typing-extensions<5,>=4.11 (from openai)
+  Using cached typing_extensions-4.15.0-py3-none-any.whl.metadata (3.3 kB)
+Requirement already satisfied: idna>=2.8 in /home/john-mbugua/Desktop/FINSTAR/finstar_backend/venv/lib/python3.12/site-packages (from anyio<5,>=3.5.0->openai) (3.13)
+Requirement already satisfied: certifi in /home/john-mbugua/Desktop/FINSTAR/finstar_backend/venv/lib/python3.12/site-packages (from httpx<1,>=0.23.0->openai) (2026.4.22)
+Collecting httpcore==1.* (from httpx<1,>=0.23.0->openai)
+  Downloading httpcore-1.0.9-py3-none-any.whl.metadata (21 kB)
+Collecting h11>=0.16 (from httpcore==1.*->httpx<1,>=0.23.0->openai)
+  Using cached h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+Collecting annotated-types>=0.6.0 (from pydantic<3,>=1.9.0->openai)
+  Using cached annotated_types-0.7.0-py3-none-any.whl.metadata (15 kB)
+Collecting pydantic-core==2.46.3 (from pydantic<3,>=1.9.0->openai)
+  Downloading pydantic_core-2.46.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (6.6 kB)
+Collecting typing-inspection>=0.4.2 (from pydantic<3,>=1.9.0->openai)
+  Using cached typing_inspection-0.4.2-py3-none-any.whl.metadata (2.6 kB)
+Downloading openai-2.32.0-py3-none-any.whl (1.2 MB)
+   ━━ 1.… 1… eta 0:0…
+      MB  k…         
+Using cached anyio-4.13.0-py3-none-any.whl (114 kB)
+Downloading distro-1.9.0-py3-none-any.whl (20 kB)
+Downloading httpx-0.28.1-py3-none-any.whl (73 kB)
+   ━━ 73… 2… eta 0:0…
+      kB  k…         
+Downloading httpcore-1.0.9-py3-none-any.whl (78 kB)
+   ━━ 78… 3… eta 0:0…
+      kB  k…         
+Downloading jiter-0.14.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (353 kB)
+   ━━ 35… 3… eta 0:0…
+      kB  k…         
+Downloading pydantic-2.13.3-py3-none-any.whl (471 kB)
+   ━━ 47… 3… eta 0:0…
+      kB  k…         
+Downloading pydantic_core-2.46.3-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (2.1 MB)
+   ━━ 2.… 5… eta 0:0…
+      MB  k…         
+Using cached tqdm-4.67.3-py3-none-any.whl (78 kB)
+Using cached typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+Downloading sniffio-1.3.1-py3-none-any.whl (10 kB)
+Using cached annotated_types-0.7.0-py3-none-any.whl (13 kB)
+Using cached typing_inspection-0.4.2-py3-none-any.whl (14 kB)
+Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+Installing collected packages: typing-extensions, tqdm, sniffio, jiter, h11, distro, annotated-types, typing-inspection, pydantic-core, httpcore, anyio, pydantic, httpx, openai
+Successfully installed annotated-types-0.7.0 anyio-4.13.0 distro-1.9.0 h11-0.16.0 httpcore-1.0.9 httpx-0.28.1 jiter-0.14.0 openai-2.32.0 pydantic-2.13.3 pydantic-core-2.46.3 sniffio-1.3.1 tqdm-4.67.3 typing-extensions-4.15.0 typing-inspection-0.4.2

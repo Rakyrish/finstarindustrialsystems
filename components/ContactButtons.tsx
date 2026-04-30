@@ -6,9 +6,9 @@ interface Props {
 
 const PHONE_NUMBER = "254726559606";
 
-export default function ContactButtons({ productName = "this product" }: Props) {
+export default function ContactButtons({ productName }: Props) {
     const message = encodeURIComponent(
-        `Hello, I'm interested in: ${productName}. Please send me more details.`
+        `Hello, I'm interested in: ${productName}.`
     );
 
     function handleWhatsApp(e: React.MouseEvent) {
