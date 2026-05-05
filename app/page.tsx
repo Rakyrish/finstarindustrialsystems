@@ -5,6 +5,9 @@ import EmptyState from "@/components/EmptyState";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/JsonLd";
 import FeaturedProducts from "@/components/FeaturedProducts";
 import SectionWrapper, { SectionHeader } from "@/components/SectionWrapper";
+import ClientsSection, { type Client } from "@/components/ClientsSection"
+import BrandsSection from "@/components/BrandSection";
+import ReviewsSection, { type GoogleReview } from "@/components/ReviewsSection";
 import { getCategories, getProducts } from "@/lib/api";
 import { services } from "@/lib/data";
 import { Category, Product } from "@/types";
@@ -38,6 +41,41 @@ export const metadata: Metadata = {
   },
 };
 
+
+const clients: Client[] = [
+  { name: "H Young & Company (EA) Ltd", logoUrl: "/HYoung.png" },
+  { name: "Persea", logoUrl: "/persea.png" },
+  { name: "A to Z Group Limited", logoUrl: "/atoz.png" },
+  { name: "JKUAT", logoUrl: "/jkuat.png" },
+  { name: "Seco", logoUrl: "/seco.png" },
+  { name: "Bulk Stream", logoUrl: "/bulk.png" },
+  { name: "Auto", logoUrl: "/auto.png" },
+  { name: "Olesereni Hotel", logoUrl: "/olesereni.png" },
+
+];
+
+const brands = [
+  { name: "Riello", logoUrl: "/riello.png" },
+  { name: "Secop", logoUrl: "/secop.png" },
+  { name: "Baite", logoUrl: "/baite.png" },
+  { name: "Spirax", logoUrl: "/spirax.png" },
+  { name: "Suniso", logoUrl: "/suniso.png" },
+  { name: "Emkarate", logoUrl: "/emkarate.png" },
+  { name: "Nu Way", logoUrl: "/nuway.png" },
+  { name: "Baltur", logoUrl: "/baltur.png" },
+  { name: "Danfoss", logoUrl: "/danfoss.png" },
+  { name: "Gree", logoUrl: "/gree.png" },
+  { name: "LG", logoUrl: "/lg.png" },
+  { name: "Maxron", logoUrl: "/maxron.png" },
+  { name: "Westron", logoUrl: "/westron.png" },
+  { name: "Maksal", logoUrl: "/maksal.png" },
+
+
+
+];
+
+// ─── Data fetching ────────────────────────────────────────────────────────────
+
 async function getHomepageData(): Promise<{
   categories: Category[];
   featuredProducts: Product[];
@@ -46,24 +84,54 @@ async function getHomepageData(): Promise<{
     getCategories(),
     getProducts({ featured: true, pageSize: 6 }),
   ]);
-
-  return {
-    categories,
-    featuredProducts: featuredProducts.results,
-  };
+  return { categories, featuredProducts: featuredProducts.results };
 }
+
+// Fetch Google reviews via our own API route (ISR-cached 24h server-side)
+async function getReviews(): Promise<{
+  reviews: GoogleReview[];
+  overallRating: number;
+  totalRatings: number;
+}> {
+  try {
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+    const res = await fetch(`${baseUrl}/api/reviews`, {
+      next: { revalidate: 86400 },
+    });
+    if (!res.ok) throw new Error("Reviews fetch failed");
+    return res.json();
+  } catch {
+    return { reviews: [], overallRating: 4.8, totalRatings: 0 };
+  }
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function HomePage() {
   let categories: Category[] = [];
   let featuredProducts: Product[] = [];
   let hasApiError = false;
+  let reviews: GoogleReview[] = [];
+  let overallRating = 4.8;
+  let totalRatings = 0;
 
-  try {
-    const data = await getHomepageData();
-    categories = data.categories;
-    featuredProducts = data.featuredProducts;
-  } catch {
+  const [productData, reviewData] = await Promise.allSettled([
+    getHomepageData(),
+    getReviews(),
+  ]);
+
+  if (productData.status === "fulfilled") {
+    categories = productData.value.categories;
+    featuredProducts = productData.value.featuredProducts;
+  } else {
     hasApiError = true;
+  }
+
+  if (reviewData.status === "fulfilled") {
+    reviews = reviewData.value.reviews;
+    overallRating = reviewData.value.overallRating;
+    totalRatings = reviewData.value.totalRatings;
   }
 
   return (
@@ -71,7 +139,8 @@ export default async function HomePage() {
       <OrganizationJsonLd />
       <WebsiteJsonLd />
 
-      <section className="relative flex min-h-screen items-center justify-center overflow-hidden">
+      {/* ── 1. HERO ──────────────────────────────────────────────────────────── */}
+      <section className="relative flex min-h-[85vh] items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-950 via-blue-900 to-slate-900" />
         <div className="absolute top-1/4 left-10 h-64 w-64 rounded-full bg-blue-700/10 blur-3xl" />
         <div className="absolute right-10 bottom-1/4 h-96 w-96 rounded-full bg-orange-500/10 blur-3xl" />
@@ -85,20 +154,22 @@ export default async function HomePage() {
           }}
         />
 
-        <div className="relative z-10 mx-auto max-w-7xl px-4 py-32 text-center sm:px-6 lg:px-8 lg:py-40">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-700/50 bg-blue-800/60 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-blue-200 backdrop-blur-sm">
+        <div className="relative z-10 mx-auto max-w-7xl px-4 py-20 text-center sm:px-6 lg:px-8 lg:py-28">
+          {/* Trust pill */}
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-700/50 bg-blue-800/60 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-blue-200 backdrop-blur-sm">
             <span className="h-2 w-2 animate-pulse rounded-full bg-orange-400" />
-            Industrial Excellence
+            Trusted by 500+ clients across East Africa
           </div>
 
-          <h1 className="mb-6 text-4xl leading-tight font-extrabold text-white sm:text-5xl lg:text-7xl">
-            Industrial Equipment & <span className="text-orange-400">Cooling</span>{" "}
-            Solutions
+          <h1 className="mb-5 text-4xl font-extrabold leading-tight text-white sm:text-5xl lg:text-7xl">
+            Industrial Equipment &{" "}
+            <span className="text-orange-400">Cooling</span> Solutions
           </h1>
 
-          <p className="mx-auto mb-10 max-w-3xl text-lg leading-relaxed text-blue-200 sm:text-xl">
-            From precision refrigeration systems to industrial boilers, we supply
-            and install world-class equipment for businesses across East Africa.
+          <p className="mx-auto mb-8 max-w-3xl text-lg leading-relaxed text-blue-200 sm:text-xl">
+            From precision refrigeration systems to industrial boilers, we
+            supply and install world-class equipment for businesses across East
+            Africa.
           </p>
 
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
@@ -107,10 +178,7 @@ export default async function HomePage() {
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-orange-500 px-8 py-4 text-base font-bold text-white shadow-2xl shadow-orange-500/30 transition-all duration-200 hover:bg-orange-400 hover:shadow-orange-400/40"
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
                 />
               </svg>
@@ -122,26 +190,20 @@ export default async function HomePage() {
             >
               Explore Products
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </Link>
           </div>
 
-          <div className="mx-auto mt-16 grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-4">
+          {/* Stats */}
+          <div className="mx-auto mt-10 grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-3">
             {[
               { value: "500+", label: "Clients Served" },
               { value: "5", label: "Product Categories" },
               { value: "24/7", label: "Support Available" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
-                <div className="text-3xl font-extrabold text-orange-400">
-                  {stat.value}
-                </div>
+                <div className="text-3xl font-extrabold text-orange-400">{stat.value}</div>
                 <div className="mt-1 text-sm text-blue-300">{stat.label}</div>
               </div>
             ))}
@@ -150,28 +212,27 @@ export default async function HomePage() {
 
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
           <svg className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </div>
       </section>
 
-      <SectionWrapper>
+      {/* ── 2. FEATURED PRODUCTS ─────────────────────────────────────────────── */}
+      <SectionWrapper className="py-12 lg:py-16">
         <SectionHeader
           subtitle="Top Picks"
           title="Featured Products"
-          description="Explore our most popular industrial equipment trusted by leading companies across East Africa."
+          description="Our most popular industrial equipment, trusted by leading companies across East Africa."
         />
 
         {featuredProducts.length > 0 ? (
-          <FeaturedProducts
-            featuredProducts={featuredProducts}
-            categories={categories}
-          />
+          <>
+            <FeaturedProducts
+              featuredProducts={featuredProducts}
+              categories={categories}
+            />
+
+          </>
         ) : (
           <EmptyState
             title={hasApiError ? "Failed to load products" : "No featured products yet"}
@@ -182,11 +243,12 @@ export default async function HomePage() {
         )}
       </SectionWrapper>
 
-      <SectionWrapper className="bg-slate-50 dark:bg-slate-900/50">
+      {/* ── 3. PRODUCT CATEGORIES ────────────────────────────────────────────── */}
+      {/* <SectionWrapper className="bg-slate-50 py-12 dark:bg-slate-900/50 lg:py-16">
         <SectionHeader
           subtitle="What We Offer"
           title="Our Product Categories"
-          description="We supply and install a comprehensive range of industrial systems and equipment tailored to your needs."
+          description="A comprehensive range of industrial systems and equipment tailored to your needs."
         />
         {categories.length > 0 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
@@ -197,31 +259,56 @@ export default async function HomePage() {
         ) : (
           <EmptyState
             title={hasApiError ? "Failed to load categories" : "No categories available"}
-            description="The product categories will appear here once the backend data is available."
+            description="Product categories will appear here once backend data is available."
             icon="📦"
             action={{ label: "Browse Products", href: "/products" }}
           />
         )}
+      </SectionWrapper> */}
+
+      {/* ── 3.5. BRANDS ───────────────────────────────────────────────────────── */}
+      <SectionWrapper className="bg-slate-50 py-12 dark:bg-slate-900/50 lg:py-16">
+        <BrandsSection brands={brands} />
       </SectionWrapper>
 
-      <SectionWrapper dark className="bg-slate-900">
+      {/* ── 4. CLIENTS ───────────────────────────────────────────────────────── */}
+      <ClientsSection clients={clients} />
+
+      {/* ── 5. GOOGLE REVIEWS ────────────────────────────────────────────────── */}
+      {reviews.length > 0 && (
+        <SectionWrapper>
+          <SectionHeader
+            subtitle="Google Reviews"
+            title="What Our Clients Say"
+            description="Trusted by businesses across East Africa with glowing reviews on Google."
+          />
+          <ReviewsSection
+            reviews={reviews}
+            overallRating={overallRating}
+            totalRatings={totalRatings}
+          />
+        </SectionWrapper>
+      )}
+
+      {/* ── 6. SERVICES ──────────────────────────────────────────────────────── */}
+      <SectionWrapper dark className="bg-slate-900 py-12 lg:py-16">
         <SectionHeader
           subtitle="Our Services"
           title="What We Do"
           description="Complete solutions from design and supply to installation, commissioning and ongoing maintenance."
           light
         />
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((service) => (
             <div
               key={service.id}
-              className="group rounded-2xl border border-slate-700 bg-slate-800/60 p-6 backdrop-blur transition-all duration-300 hover:border-orange-500/50 hover:bg-slate-800"
+              className="group rounded-2xl border border-slate-700 bg-slate-800/60 p-5 backdrop-blur transition-all duration-300 hover:border-orange-500/50 hover:bg-slate-800"
             >
               <div className="mb-3 text-3xl">{service.icon}</div>
-              <h3 className="mb-2 text-base font-bold text-white transition-colors group-hover:text-orange-400">
+              <h3 className="mb-1.5 text-sm font-bold text-white transition-colors group-hover:text-orange-400">
                 {service.title}
               </h3>
-              <p className="text-sm leading-relaxed text-slate-400">
+              <p className="text-xs leading-relaxed text-slate-400">
                 {service.description}
               </p>
             </div>
@@ -229,50 +316,8 @@ export default async function HomePage() {
         </div>
       </SectionWrapper>
 
-      <SectionWrapper className="bg-white dark:bg-slate-900">
-        <SectionHeader
-          subtitle="Why Finstar"
-          title="Built for Industry, Trusted by Business"
-          description="We combine technical excellence with local expertise to deliver solutions that last."
-        />
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {[
-            {
-              icon: "🎯",
-              title: "Expert Engineers",
-              text: "Our certified engineers bring decades of hands-on industrial experience.",
-            },
-            {
-              icon: "⚙️",
-              title: "Premium Equipment",
-              text: "We source only top-tier equipment from internationally certified manufacturers.",
-            },
-            {
-              icon: "🔄",
-              title: "End-to-End Service",
-              text: "From design and supply to installation, commissioning, and ongoing maintenance.",
-            },
-            {
-              icon: "⚡",
-              title: "Fast Response",
-              text: "24/7 emergency support to minimise downtime and keep your operations running.",
-            },
-          ].map((item) => (
-            <div
-              key={item.title}
-              className="group rounded-2xl bg-slate-50 dark:bg-slate-800 p-6 text-center transition-colors duration-300 hover:bg-blue-50 dark:hover:bg-slate-700"
-            >
-              <div className="mb-4 text-4xl">{item.icon}</div>
-              <h3 className="mb-2 font-bold text-slate-900 dark:text-white transition-colors group-hover:text-blue-800 dark:group-hover:text-blue-400">
-                {item.title}
-              </h3>
-              <p className="text-sm leading-relaxed text-slate-500 dark:text-slate-400">{item.text}</p>
-            </div>
-          ))}
-        </div>
-      </SectionWrapper>
-
-      <section className="relative overflow-hidden py-20">
+      {/* ── 7. CTA ───────────────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden py-14">
         <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-orange-600" />
         <div
           className="absolute inset-0 opacity-10"
@@ -281,12 +326,11 @@ export default async function HomePage() {
               "radial-gradient(circle at 25% 50%, white 0%, transparent 50%), radial-gradient(circle at 75% 50%, white 0%, transparent 50%)",
           }}
         />
-
         <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="mb-4 text-3xl font-extrabold text-white lg:text-4xl">
+          <h2 className="mb-3 text-3xl font-extrabold text-white lg:text-4xl">
             Ready to Upgrade Your Industrial Systems?
           </h2>
-          <p className="mx-auto mb-8 max-w-2xl text-lg text-orange-100">
+          <p className="mx-auto mb-7 max-w-2xl text-lg text-orange-100">
             Get in touch today for a free consultation and custom quote from our
             expert team.
           </p>
@@ -315,11 +359,10 @@ export default async function HomePage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              Map
+              Find Us on Map
             </a>
           </div>
         </div>
-
       </section>
     </>
   );

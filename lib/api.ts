@@ -758,3 +758,115 @@ export async function generateProductWithAI(input: File | string): Promise<AIPro
     body: JSON.stringify({ image_url: input }),
   });
 }
+
+// ── Chatbot API ───────────────────────────────────────────────────────────────
+
+export interface ChatMessage {
+  id: number;
+  sender: "user" | "bot";
+  message: string;
+  created_at: string;
+}
+
+export interface ChatSessionSummary {
+  id: string;
+  user_identifier: string;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+  last_message_preview: string;
+  last_message_at: string;
+}
+
+export interface ChatSessionDetail {
+  id: string;
+  user_identifier: string;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+  messages: ChatMessage[];
+}
+
+export interface ChatInsights {
+  total_sessions: number;
+  total_messages: number;
+  messages_today: number;
+  active_sessions_24h: number;
+  recent_messages: {
+    id: number;
+    sender: string;
+    message: string;
+    created_at: string;
+    session_id: string;
+  }[];
+  common_questions: {
+    message: string;
+    count: number;
+  }[];
+}
+
+export interface ChatbotResponse {
+  reply: string;
+  session_id: string;
+  rate_limited?: boolean;
+}
+
+/**
+ * POST /api/chatbot/
+ * Send a message to the chatbot and get an AI response.
+ */
+export async function sendChatMessage(
+  message: string,
+  sessionId?: string | null,
+): Promise<ChatbotResponse> {
+  return fetchAPI<ChatbotResponse>("/chatbot", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      message,
+      session_id: sessionId || undefined,
+    }),
+  });
+}
+
+/**
+ * GET /api/admin/chat-sessions/
+ * Admin: paginated list of all chat sessions.
+ */
+export async function getAdminChatSessions(options?: {
+  page?: number;
+  search?: string;
+  date_from?: string;
+  date_to?: string;
+}): Promise<PaginatedResponse<ChatSessionSummary>> {
+  const params = new URLSearchParams();
+  if (options?.page) params.set("page", String(options.page));
+  if (options?.search) params.set("search", options.search);
+  if (options?.date_from) params.set("date_from", options.date_from);
+  if (options?.date_to) params.set("date_to", options.date_to);
+  const query = params.toString();
+  return authFetchAPI<PaginatedResponse<ChatSessionSummary>>(
+    query ? `/admin/chat-sessions/?${query}` : "/admin/chat-sessions/",
+    { next: { revalidate: 0 } },
+  );
+}
+
+/**
+ * GET /api/admin/chat-sessions/<uuid>/
+ * Admin: full conversation detail.
+ */
+export async function getAdminChatSession(sessionId: string): Promise<ChatSessionDetail> {
+  return authFetchAPI<ChatSessionDetail>(`/admin/chat-sessions/${sessionId}/`, {
+    next: { revalidate: 0 },
+  });
+}
+
+/**
+ * GET /api/admin/chat-insights/
+ * Admin: monitoring stats and insights.
+ */
+export async function getAdminChatInsights(): Promise<ChatInsights> {
+  return authFetchAPI<ChatInsights>("/admin/chat-insights/", {
+    next: { revalidate: 0 },
+  });
+}

@@ -108,6 +108,7 @@ export const metadata: Metadata = {
 };
 
 import { ThemeProvider } from "@/components/ThemeProvider";
+import SupportWidgetWrapper from "@/components/SupportWidgetWrapper";
 
 export default function RootLayout({
   children,
@@ -132,8 +133,10 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
+          <SupportWidgetWrapper />
         </ThemeProvider>
       </body>
     </html>
   );
 }
+
