@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/api/", "/_next/", "/static/"],
       },
     ],
-    sitemap: "https://finstarindustrial.com/sitemap.xml",
-    host: "https://finstarindustrial.com",
+    sitemap: "https://finstarindustrials.com/sitemap.xml",
+    host: "https://finstarindustrials.com",
   };
 }

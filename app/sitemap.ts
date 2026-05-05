@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 import { getCategories, getProducts } from "@/lib/api";
 
-const BASE_URL = "https://finstarindustrial.com";
+const BASE_URL = "https://finstarindustrials.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();

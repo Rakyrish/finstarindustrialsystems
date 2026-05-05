@@ -232,7 +232,7 @@ export default function SupportWidget() {
                 <div className="support-widget__header-logo">
                   <span className="support-widget__logo-dot" />
                   <div>
-                    <h3 className="support-widget__header-title">Finstar Support</h3>
+                    <h3 className="support-widget__header-title">Finstar Supports</h3>
                     <p className="support-widget__header-sub">How can we help you today?</p>
                   </div>
                 </div>
