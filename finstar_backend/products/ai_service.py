@@ -146,8 +146,7 @@ def generate_product_details(image_url: str) -> dict:
             ) from exc
         raise AIServiceError(f"AI service request failed: {exc}") from exc
 
-    # The Responses API returns: response.output[N] -> ResponseOutputMessage
-    # Each message has: .content[N] -> ResponseOutputText with a .text attribute
+   
     raw_content = None
     try:
         for output_item in response.output:

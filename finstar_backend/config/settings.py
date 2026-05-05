@@ -37,6 +37,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",  # Must be first
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # Serve static files efficiently
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -71,6 +72,13 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
+# ── CSRF ──────────────────────────────────────────────────────────────────────
+CSRF_TRUSTED_ORIGINS = config(
+    "CSRF_TRUSTED_ORIGINS",
+    default="http://localhost:3000",
+    cast=Csv(),
+)
+
 # ── URL / WSGI ────────────────────────────────────────────────────────────────
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
@@ -102,7 +110,7 @@ DATABASES = {
         "PORT": config("DB_PORT"),
     }
 }
-# print('showing database:',DATABASES)
+print('showing database:',DATABASES)
 
 # ── Password Validation ──────────────────────────────────────────────────────
 AUTH_PASSWORD_VALIDATORS = [
@@ -121,6 +129,7 @@ USE_TZ = True
 # ── Static Files ──────────────────────────────────────────────────────────────
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # ── Default Primary Key ──────────────────────────────────────────────────────
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -194,6 +203,19 @@ OPENAI_API_KEY = config("OPENAI_API_KEY", default="")
 
 # ── Gemini (chatbot AI) ──────────────────────────────────────────────────────
 GEMINI_API_KEY = config("GEMINI_API_KEY", default="")
+
+# ── Production Security (behind nginx reverse proxy) ─────────────────────────
+if not DEBUG:
+    # Trust X-Forwarded-Proto header from nginx
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    # Secure cookies
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # HSTS (handled by nginx, but Django can enforce too)
+    SECURE_HSTS_SECONDS = 63072000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_SSL_REDIRECT = False  # nginx handles redirect, not Django
 
 # ── Log directory ─────────────────────────────────────────────────────────────
 LOG_DIR = BASE_DIR / "logs"

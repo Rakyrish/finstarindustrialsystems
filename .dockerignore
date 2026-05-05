@@ -1,0 +1,48 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Frontend .dockerignore — Prevents sending unnecessary files to build context
+# ──────────────────────────────────────────────────────────────────────────────
+
+# Dependencies (reinstalled in Docker)
+node_modules/
+.pnp.*
+.yarn/*
+
+# Build output (rebuilt in Docker)
+.next/
+out/
+build/
+
+# Backend (separate build context)
+finstar_backend/
+
+# Version control
+.git/
+.gitignore
+
+# Environment (injected via docker-compose)
+.env
+.env.*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker files (not needed in image)
+docker-compose*.yml
+Dockerfile
+nginx/
+
+# Misc
+*.md
+!README.md
+LICENSE
+.editorconfig
+*.tsbuildinfo
+coverage/

@@ -8,7 +8,12 @@ import type {
   ProductCategory,
 } from "@/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL + "api";
+// In Docker, SSR requests use the internal network URL (http://backend:8000/)
+// while client-side requests use the public URL (https://finstarindustrials.com/)
+const API_BASE_URL =
+  (typeof window === "undefined"
+    ? process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL
+    : process.env.NEXT_PUBLIC_API_URL) + "api";
 
 interface FetchAPIOptions extends RequestInit {
   next?: {

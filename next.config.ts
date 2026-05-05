@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // ── Standalone output for Docker ──────────────────────────────────────────
+  output: "standalone",
+
   // ── Allow dev network access ──────────────────────────────────────────────
   allowedDevOrigins: ["192.168.2.113"],
 
