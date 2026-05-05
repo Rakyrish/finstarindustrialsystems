@@ -43,6 +43,10 @@ const LoaderIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
 );
 
+const ChatBotNavIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2" /><path d="M20 14h2" /><path d="M15 13v2" /><path d="M9 13v2" /></svg>
+);
+
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isHydrated, logout, session } = useAuth();
   const pathname = usePathname();
@@ -86,6 +90,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     { name: "Categories", href: "/admin/categories", icon: FolderIcon },
     { name: "Inventory", href: "/admin/inventory", icon: InventoryIcon },
     { name: "Inquiries", href: "/admin/inquiries", icon: MessageIcon },
+    { name: "Chatbot", href: "/admin/chatbot", icon: ChatBotNavIcon },
     { name: "Monitoring", href: "/admin/monitoring", icon: ActivityIcon },
 
 

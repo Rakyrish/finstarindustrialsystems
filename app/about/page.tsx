@@ -39,7 +39,7 @@ export default function AboutPage() {
           </nav>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-3">About Us</h1>
           <p className="text-blue-200 text-lg max-w-2xl">
-            Two decades of industrial excellence, passion, and a commitment to quality solutions.
+            Years of industrial excellence, passion, and a commitment to quality solutions.
           </p>
         </div>
       </div>
@@ -50,11 +50,11 @@ export default function AboutPage() {
           <div>
             <span className="text-orange-500 font-semibold text-sm uppercase tracking-widest">Our Story</span>
             <h2 className="text-3xl lg:text-4xl font-extrabold text-slate-900 dark:text-white mt-2 mb-5 leading-tight">
-              Powering Industry Across East Africa Since 2005
+              Powering Industry Across East Africa
             </h2>
             <div className="space-y-4 text-slate-600 dark:text-slate-400 leading-relaxed">
               <p>
-                Finstar Industrial Systems was founded in 2005 with a simple but powerful mission: to be the most
+                Finstar Industrial Systems was founded with a simple but powerful mission: to be the most
                 trusted supplier and installer of industrial cooling and heating systems in East Africa. What started
                 as a small team of three engineers has grown into a 150-strong organisation serving clients across
                 Kenya, Uganda, Tanzania, and beyond.

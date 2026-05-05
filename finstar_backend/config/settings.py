@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "django_filters",
     # Local
     "products",
+    "chatbot",
 ]
 
 # ── Middleware ────────────────────────────────────────────────────────────────
@@ -191,6 +192,9 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
 # ── OpenAI (AI product generation) ───────────────────────────────────────────
 OPENAI_API_KEY = config("OPENAI_API_KEY", default="")
 
+# ── Gemini (chatbot AI) ──────────────────────────────────────────────────────
+GEMINI_API_KEY = config("GEMINI_API_KEY", default="")
+
 # ── Log directory ─────────────────────────────────────────────────────────────
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
@@ -240,6 +244,11 @@ LOGGING = {
             "propagate": False,
         },
         "products.request": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "chatbot": {
             "handlers": ["console", "file"],
             "level": "INFO",
             "propagate": False,

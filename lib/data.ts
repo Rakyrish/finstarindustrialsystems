@@ -198,12 +198,5 @@ export const services: Service[] = [
     description:
       "Scheduled preventive maintenance contracts to keep your systems at peak efficiency and minimise downtime.",
     icon: "🔧",
-  },
-  {
-    id: "s-6",
-    title: "Emergency Breakdown Support",
-    description:
-      "24/7 emergency call-out service for rapid diagnosis and repair of critical refrigeration and HVAC systems.",
-    icon: "⚡",
-  },
+  }
 ];
