@@ -16,9 +16,8 @@ export default function SectionWrapper({
   return (
     <section
       id={id}
-      className={`py-16 lg:py-24 px-4 sm:px-6 lg:px-8 ${
-        dark ? "bg-slate-900 text-white" : "bg-white dark:bg-slate-900"
-      } ${className}`}
+      className={`py-16 lg:py-24 px-4 sm:px-6 lg:px-8 ${dark ? "bg-slate-900 text-white" : "bg-white dark:bg-slate-900"
+        } ${className}`}
     >
       <div className="max-w-7xl mx-auto">{children}</div>
     </section>
@@ -48,17 +47,15 @@ export function SectionHeader({
         </span>
       )}
       <h2
-        className={`text-3xl lg:text-4xl font-bold leading-tight ${
-          light ? "text-white" : "text-slate-900 dark:text-white"
-        }`}
+        className={`text-3xl lg:text-4xl font-bold leading-tight ${light ? "text-white" : "text-slate-900 dark:text-white"
+          }`}
       >
         {title}
       </h2>
       {description && (
         <p
-          className={`mt-3 text-lg max-w-2xl ${centered ? "mx-auto" : ""} ${
-            light ? "text-slate-300" : "text-slate-500 dark:text-slate-400"
-          }`}
+          className={`mt-3 text-lg max-w-2xl ${centered ? "mx-auto" : ""} ${light ? "text-slate-300" : "text-slate-500 dark:text-slate-400"
+            }`}
         >
           {description}
         </p>

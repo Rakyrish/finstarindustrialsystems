@@ -1,0 +1,62 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# FINSTAR Industrial Systems — Development Docker Compose Override
+# ──────────────────────────────────────────────────────────────────────────────
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# This override:
+#   - Exposes frontend/backend ports directly (no nginx)
+#   - Mounts source code for hot-reload
+#   - Enables Django DEBUG mode
+#   - Skips nginx and certbot services
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+  db:
+    ports:
+      - "5433:5432"
+
+  backend:
+    build:
+      context: ./finstar_backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DEBUG: "True"
+      DB_HOST: db
+      DB_PORT: 5432
+      ALLOWED_HOSTS: "localhost,127.0.0.1,backend,0.0.0.0"
+      CORS_ALLOWED_ORIGINS: "http://localhost:3000"
+      CSRF_TRUSTED_ORIGINS: "http://localhost:3000"
+    volumes:
+      - ./finstar_backend:/app
+      - /app/__pycache__
+      - backend-static:/app/staticfiles
+      - backend-logs:/app/logs
+    user: root
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "http://localhost:8000/"
+        NEXT_PUBLIC_BASE_URL: "http://localhost:3000"
+    ports:
+      - "3000:3000"
+    environment:
+      INTERNAL_API_URL: "http://backend:8000/"
+
+  # Disable nginx and certbot in development
+  nginx:
+    profiles:
+      - production-only
+
+  certbot:
+    profiles:
+      - production-only
