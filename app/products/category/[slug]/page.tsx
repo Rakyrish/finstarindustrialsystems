@@ -9,7 +9,7 @@ import {
   FAQJsonLd,
 } from "@/components/JsonLd";
 import ProductCard from "@/components/ProductCard";
-import { getCategories, getProducts } from "@/lib/api";
+import { fetchAllProducts, getCategories } from "@/lib/api";
 import {
   buildCategoryMetadata,
   buildCategoryPath,
@@ -59,8 +59,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   }
 
   const seo = getCategorySeoContent(category);
-  const productsResponse = await getProducts({ category: category.slug, pageSize: 100 });
-  const products = productsResponse.results;
+  // fetchAllProducts() auto-paginates — no hardcoded limit
+  const products = await fetchAllProducts({ category: category.slug });
   const breadcrumbs: BreadcrumbItem[] = [
     { name: "Home", href: "/" },
     { name: "Products", href: "/products" },

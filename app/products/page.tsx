@@ -9,7 +9,7 @@ import {
   FAQJsonLd,
 } from "@/components/JsonLd";
 import ProductsClient from "./ProductsClient";
-import { getCategories, getProducts } from "@/lib/api";
+import { fetchAllProducts, getCategories } from "@/lib/api";
 import type { Category, Product } from "@/types";
 import {
   buildPageMetadata,
@@ -68,12 +68,12 @@ async function getProductsPageData(): Promise<{
   categories: Category[];
 }> {
   const [products, categories] = await Promise.all([
-    getProducts({ pageSize: 100 }),
+    fetchAllProducts(),
     getCategories(),
   ]);
 
   return {
-    products: products.results,
+    products,
     categories,
   };
 }
