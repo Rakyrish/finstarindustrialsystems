@@ -345,6 +345,54 @@ export async function getProductBySlug(slug: string) {
   return mapProduct(response);
 }
 
+/**
+ * Fetches ALL active products by walking every paginated page until exhausted.
+ *
+ * Use this everywhere you need the complete catalogue:
+ *   - products page (SSR)
+ *   - category pages (SSR)
+ *   - sitemap generation
+ *   - generateStaticParams
+ *   - homepage featured products
+ *   - image sitemap
+ *
+ * Pass optional `options` to apply server-side filters (e.g. { category: "hvac" }).
+ * Do NOT pass `page` or `pageSize` — those are managed internally.
+ *
+ * In development mode, logs a count comparison so you can verify the frontend
+ * matches the backend total without shipping debug code to production.
+ */
+export async function fetchAllProducts(
+  options: Omit<ProductQueryOptions, "page" | "pageSize"> = {},
+): Promise<Product[]> {
+  // Use a large page size to minimise round-trips while staying inside max_page_size=1000
+  const PAGE_SIZE = 500;
+  const results: Product[] = [];
+  let page = 1;
+
+  while (true) {
+    const response = await getProducts({ ...options, page, pageSize: PAGE_SIZE });
+    results.push(...response.results);
+
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        `[fetchAllProducts] page=${page} fetched=${response.results.length} ` +
+        `total_so_far=${results.length} api_total=${response.count}`,
+      );
+    }
+
+    // `response.next` is null when we have reached the last page
+    if (!response.next) break;
+    page++;
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    console.log(`[fetchAllProducts] COMPLETE — ${results.length} products loaded`);
+  }
+
+  return results;
+}
+
 // ── Public API: Inquiries ─────────────────────────────────────────────────────
 
 export async function submitInquiry(payload: InquiryPayload) {

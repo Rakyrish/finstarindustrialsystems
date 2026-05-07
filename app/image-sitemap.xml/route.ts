@@ -1,15 +1,16 @@
-import { getProducts } from "@/lib/api";
+import { fetchAllProducts } from "@/lib/api";
 import { absoluteUrl } from "@/lib/seo";
 
 export const revalidate = 3600;
 
 export async function GET() {
   try {
-    const products = await getProducts({ pageSize: 200 });
+    // fetchAllProducts() auto-paginates — image sitemap includes every product
+    const products = await fetchAllProducts();
 
     const body = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
-${products.results
+${products
   .filter((product) => product.imageUrls.length > 0 || product.imageUrl)
   .map((product) => {
     const images = (product.imageUrls.length > 0 ? product.imageUrls : [product.imageUrl])

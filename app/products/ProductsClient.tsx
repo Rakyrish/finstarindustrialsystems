@@ -201,7 +201,7 @@ export default function ProductsClient({
                   ? "bg-blue-700 text-blue-100"
                   : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
                   }`}>
-                  {initialProducts.length}
+                  {/* {initialProducts.length} */}
                 </span>
               </button>
 
@@ -273,7 +273,7 @@ export default function ProductsClient({
                 ? "bg-blue-700 text-blue-100"
                 : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400"
                 }`}>
-                {initialProducts.length}
+                {/* {initialProducts.length} */}
               </span>
             </button>
 

@@ -1,5 +1,5 @@
 import { MetadataRoute } from "next";
-import { getCategories, getProducts } from "@/lib/api";
+import { fetchAllProducts, getCategories } from "@/lib/api";
 import { buildCategoryPath, SITE_URL } from "@/lib/seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -35,7 +35,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const [categories, products] = await Promise.all([
       getCategories(),
-      getProducts({ pageSize: 100 }),
+      // fetchAllProducts() auto-paginates — sitemap includes every active product
+      fetchAllProducts(),
     ]);
 
     const categoryRoutes: MetadataRoute.Sitemap = categories.map((category) => ({
@@ -45,7 +46,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.85,
     }));
 
-    const productRoutes: MetadataRoute.Sitemap = products.results.map((product) => ({
+    const productRoutes: MetadataRoute.Sitemap = products.map((product) => ({
       url: `${SITE_URL}/products/${product.slug}`,
       lastModified: product.updatedAt || now,
       changeFrequency: "weekly",

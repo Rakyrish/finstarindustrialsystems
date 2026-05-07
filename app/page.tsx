@@ -8,7 +8,7 @@ import SectionWrapper, { SectionHeader } from "@/components/SectionWrapper";
 import ClientsSection, { type Client } from "@/components/ClientsSection"
 import BrandsSection from "@/components/BrandSection";
 import ReviewsSection, { type GoogleReview } from "@/components/ReviewsSection";
-import { getCategories, getProducts } from "@/lib/api";
+import { getCategories, fetchAllProducts } from "@/lib/api";
 import { services } from "@/lib/data";
 import { buildPageMetadata, homepageFaqs, SITE_URL } from "@/lib/seo";
 import { Category, Product } from "@/types";
@@ -67,14 +67,12 @@ async function getHomepageData(): Promise<{
 }> {
   const [categories, allProducts] = await Promise.all([
     getCategories(),
-    // Fetch ALL active products (no featured filter, high page size)
-    // so every category with 2+ products is guaranteed to appear.
-    getProducts({ pageSize: 200 }),
+    // fetchAllProducts() auto-paginates — every product is available for featured sections
+    fetchAllProducts(),
   ]);
 
-  // Keep only products that belong to a known category with 2+ products,
-  // but still pass everything through — FeaturedProducts handles filtering.
-  return { categories, featuredProducts: allProducts.results };
+  // Pass the full product list — FeaturedProducts handles the display cap per category.
+  return { categories, featuredProducts: allProducts };
 }
 
 // Fetch Google reviews via our own API route (ISR-cached 24h server-side)

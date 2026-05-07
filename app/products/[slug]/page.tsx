@@ -11,7 +11,7 @@ import {
 } from "@/components/JsonLd";
 import ProductCard from "@/components/ProductCard";
 import ProductDescription from "@/components/ProductDescription";
-import { APIError, getProductBySlug, getProducts, isAPIError } from "@/lib/api";
+import { APIError, fetchAllProducts, getProductBySlug, getProducts, isAPIError } from "@/lib/api";
 import { getCategoryIcon } from "@/lib/data";
 import {
   buildCategoryPath,
@@ -43,8 +43,9 @@ async function getRelatedProducts(product: Product) {
 
 export async function generateStaticParams() {
   try {
-    const products = await getProducts({ pageSize: 100 });
-    return products.results.map((product) => ({ slug: product.slug }));
+    // fetchAllProducts() auto-paginates — all product slugs are pre-rendered
+    const products = await fetchAllProducts();
+    return products.map((product) => ({ slug: product.slug }));
   } catch {
     return [];
   }
