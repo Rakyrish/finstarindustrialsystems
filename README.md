@@ -157,6 +157,10 @@ This script will:
 docker compose exec backend python manage.py createsuperuser
 ```
 
+Admin URLs after deploy:
+- Custom site admin app: `https://finstarindustrials.com/admin`
+- Django admin: `https://finstarindustrials.com/root/admin/`
+
 ### Step 6: Verify Deployment
 
 ```bash
