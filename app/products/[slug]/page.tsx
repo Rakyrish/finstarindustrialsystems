@@ -121,18 +121,18 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             ) : (
               <span className="select-none text-[10rem] opacity-25">{categoryIcon}</span>
             )}
-            <div className="absolute left-4 top-4">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-sm backdrop-blur dark:bg-slate-900/90 dark:text-slate-200">
+            <div className="absolute right-2 top-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 px-1 py-1.5 text-xs font-semibold text-slate-800 shadow-sm backdrop-blur dark:bg-slate-900/90 dark:text-slate-200">
                 {categoryIcon} {product.category.name}
               </span>
             </div>
-            <div className="absolute bottom-4 right-4 rounded-2xl border border-white/20 bg-white/80 p-2 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-950/70">
+            <div className="absolute bottom-2 right-2 rounded-1xl border border-white/20 bg-white/80 p-2 shadow-lg backdrop-blur dark:border-white/10 dark:bg-slate-950/70">
               <Image
                 src="/logo.png"
-                width={56}
-                height={56}
+                width={100}
+                height={100}
                 alt="Finstar Industrial Systems Ltd logo"
-                className="h-10 w-10 object-contain"
+                className="h-6 w-6 object-contain"
               />
             </div>
           </div>
@@ -153,14 +153,6 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               {product.shortDescription || stripHtml(product.description) || "Industrial product supplied by Finstar Industrial Systems Ltd in Nairobi, Kenya and East Africa."}
             </p>
 
-            <div className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-4 dark:border-orange-500/20 dark:bg-orange-500/10">
-              <h2 className="text-sm font-bold uppercase tracking-[0.18em] text-orange-700 dark:text-orange-300">
-                Product Relevance for Kenya and East Africa
-              </h2>
-              <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">
-                This product page is optimized for engineers, contractors, facility teams, and procurement managers comparing industrial equipment in Nairobi, Kenya, and regional East African markets.
-              </p>
-            </div>
 
             {product.specs && Object.keys(product.specs).length > 0 && (
               <div className="mt-6 rounded-2xl bg-slate-50 p-5 dark:bg-slate-800/50">
@@ -226,30 +218,30 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
 
         <section className="mt-12 grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
           <FAQSection
-            title={`${product.name} FAQs`}
-            description="These FAQ entries improve long-tail search coverage, AI-search visibility, and quote readiness for this product in Kenya and East Africa."
+            title={`${product.name} — Common Questions`}
+            description="Answers to the most common questions from buyers, engineers, and facility teams about this product."
             faqs={faqs}
           />
 
           <aside className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-8">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
-              Internal Linking
+              You May Also Like
             </p>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Explore related industrial supply paths
+              Explore related equipment
             </h2>
             <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">
-              Continue to the <Link href={buildCategoryPath(product.category.slug)} className="font-semibold text-orange-500 hover:text-orange-600">{product.category.name} category in Kenya</Link>, browse the full <Link href="/products" className="font-semibold text-orange-500 hover:text-orange-600">industrial equipment catalogue in Kenya</Link>, or contact our Nairobi team for procurement support.
+              Browse the full <Link href={buildCategoryPath(product.category.slug)} className="font-semibold text-orange-500 hover:text-orange-600">{product.category.name} range</Link>, explore our <Link href="/products" className="font-semibold text-orange-500 hover:text-orange-600">complete product catalogue</Link>, or contact our Nairobi team for procurement support and quotations.
             </p>
             <div className="mt-5 space-y-3 text-sm">
               <Link href={buildCategoryPath(product.category.slug)} className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
                 More {product.category.name} products
               </Link>
               <Link href="/products/category/refrigeration" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
-                Industrial refrigeration Kenya
+                Industrial Refrigeration
               </Link>
               <Link href="/contact" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
-                Request a quote from Finstar
+                Request a Quote
               </Link>
             </div>
           </aside>

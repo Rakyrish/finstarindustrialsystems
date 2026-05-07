@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 
   // ── Allow dev network access ──────────────────────────────────────────────
-  allowedDevOrigins: ["192.168.2.113"],
+  allowedDevOrigins: ["192.168.2.113", "192.168.0.178"],
 
   // ── Image optimisation ────────────────────────────────────────────────────
   images: {
@@ -47,7 +47,7 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
 
   // ── Security & SEO headers ────────────────────────────────────────────────
- async headers() {
+  async headers() {
     return [
       {
         source: "/(.*)",

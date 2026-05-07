@@ -185,7 +185,7 @@ const CATEGORY_SEO_MAP: Record<string, CategorySeoContent> = {
     introTitle: "Cold room and cold storage products for reliable temperature-controlled operations",
     paragraphs: [
       "Finstar Industrial Systems Ltd supports cold room installation Kenya and cold storage solutions East Africa through a focused range of temperature-control products, panel systems, refrigeration accessories, and supporting components. These products are used in hospitality, food processing, pharmaceuticals, floriculture, agriculture, retail, and logistics operations.",
-      "For buyers looking for cold room contractors in Nairobi or dependable cold storage equipment across Kenya, this category improves crawlable keyword coverage and gives engineering teams a clearer path to discover relevant products before requesting a tailored quote.",
+      "For buyers looking for cold room contractors in Nairobi or dependable cold storage equipment across Kenya, this category brings together a curated selection of reliable products to help engineering teams compare options and request tailored quotations efficiently.",
     ],
     faqs: [
       {
@@ -218,7 +218,7 @@ const CATEGORY_SEO_MAP: Record<string, CategorySeoContent> = {
     introTitle: "Industrial fittings and support accessories for refrigeration, HVAC, steam, and utility systems",
     paragraphs: [
       "Finstar Industrial Systems Ltd supplies industrial fittings in Kenya for refrigeration lines, HVAC systems, steam installations, maintenance work, and industrial engineering projects. This category supports contractors, plant operators, installers, and procurement teams searching for dependable accessories that keep systems safe, compliant, and efficient.",
-      "By creating a dedicated fittings landing page, the website captures searches for industrial fittings Kenya and related engineering supply terms while improving internal linking between products, services, and quotation paths for Nairobi and East African buyers.",
+      "This category is built for engineers, plant operators, installers, and procurement teams searching for dependable accessories that keep industrial systems safe, efficient, and well-maintained across Kenya and East Africa.",
     ],
     faqs: [
       {
@@ -263,9 +263,9 @@ export const homepageFaqs: FaqItem[] = [
       "Yes. You can request a quote through the contact page, by phone, or by WhatsApp for refrigeration, cold room, HVAC, boiler, and industrial engineering requirements.",
   },
   {
-    question: "Why is Finstar relevant for AI search and industrial procurement research?",
+    question: "What makes Finstar the right supplier for industrial equipment in East Africa?",
     answer:
-      "The site provides machine-readable business data, structured product information, service coverage, and local market context that make it easier for search engines and AI assistants to identify Finstar Industrial Systems Ltd as a supplier in Kenya and East Africa.",
+      "Finstar Industrial Systems Ltd combines deep local market knowledge, a broad product range, and direct relationships with leading global manufacturers. Our Nairobi-based team supports engineers, procurement managers, and facility operators from initial enquiry through to delivery and after-sales support.",
   },
 ];
 

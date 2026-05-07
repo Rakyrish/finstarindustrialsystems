@@ -92,14 +92,14 @@ export default function ProductCard({ product }: ProductCardProps) {
 
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-slate-900/10 to-transparent" />
 
-              <div className="absolute bottom-3 right-3">
-                <div className="rounded-xl border border-white/20 bg-white/80 p-1.5 shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-slate-950/65">
+              <div className="absolute bottom-1 right-1">
+                <div className="rounded-xl border border-white/20 bg-white/80 p-1 shadow-lg backdrop-blur-md dark:border-white/10 dark:bg-slate-950/65">
                   <Image
                     src="/logo.png"
                     alt="Finstar Industrial Systems Ltd"
-                    width={44}
-                    height={44}
-                    className="h-8 w-8 object-contain opacity-85 sm:h-10 sm:w-10"
+                    width={24}
+                    height={24}
+                    className="h-6 w-6 object-contain opacity-100 sm:h-10 sm:w-10"
                   />
                 </div>
               </div>
@@ -107,13 +107,13 @@ export default function ProductCard({ product }: ProductCardProps) {
           ) : (
             <div className="flex h-full items-center justify-center">
               <span className="select-none text-5xl opacity-30 sm:text-6xl">
-                {categoryIcon}
+                {/* {categoryIcon} */}
               </span>
             </div>
           )}
 
-          <div className="absolute left-3 top-3">
-            <span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] sm:text-xs ${badgeClassName}`}>
+          <div className="absolute left-1 top-0">
+            <span className={`inline-flex rounded-full px-2.5 py-1 text-[6px] font-semibold uppercase tracking-[0.14em] sm:text-xs ${badgeClassName}`}>
               {product.category.name}
             </span>
           </div>
@@ -131,7 +131,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div className="mt-4 flex items-center justify-between gap-3">
             <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 transition-colors group-hover:text-blue-900 sm:text-sm dark:text-blue-400 dark:group-hover:text-blue-200">
               View Details
-              <ArrowIcon className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" />
+              {/* <ArrowIcon className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-1" /> */}
             </span>
 
             <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 transition-all duration-300 group-hover:bg-blue-800 group-hover:text-white dark:bg-blue-950/50 dark:text-blue-300 dark:group-hover:bg-blue-500">
