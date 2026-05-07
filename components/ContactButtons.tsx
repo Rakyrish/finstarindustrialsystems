@@ -8,7 +8,9 @@ const PHONE_NUMBER = "254726559606";
 
 export default function ContactButtons({ productName }: Props) {
     const message = encodeURIComponent(
-        `Hello, I'm interested in: ${productName}.`
+        productName
+            ? `Hello, I'm interested in: ${productName}.`
+            : "Hello, I'm interested in your industrial equipment supply services in Kenya."
     );
 
     function handleWhatsApp(e: React.MouseEvent) {

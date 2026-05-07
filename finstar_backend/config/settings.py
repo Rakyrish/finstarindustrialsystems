@@ -110,7 +110,7 @@ DATABASES = {
         "PORT": config("DB_PORT"),
     }
 }
-print('showing database:',DATABASES)
+# print('showing database:',DATABASES)
 
 # ── Password Validation ──────────────────────────────────────────────────────
 AUTH_PASSWORD_VALIDATORS = [

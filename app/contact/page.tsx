@@ -1,52 +1,90 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import FAQSection from "@/components/FAQSection";
+import { BreadcrumbJsonLd, ContactPageJsonLd, FAQJsonLd } from "@/components/JsonLd";
 import ContactForm from "./ContactForm";
 
 import ContactButtons from "@/components/ContactButtons";
+import { buildPageMetadata, contactFaqs, type BreadcrumbItem } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Contact Us – Get a Free Quote for Industrial Equipment",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Contact Finstar Industrial Systems Ltd in Nairobi, Kenya",
   description:
-    "Contact Finstar Industrial Systems in Nairobi for quotes on refrigeration, HVAC, boilers, and cold rooms. 24/7 emergency support. Call +254 700 123 456 or send us a message.",
-  alternates: { canonical: "/contact" },
-  openGraph: {
-    title: "Contact Finstar Industrial Systems | Free Quote for Industrial Equipment",
-    description:
-      "Reach our expert team in Nairobi for industrial refrigeration, HVAC, boiler, and cold room quotes. Fast response. 24/7 emergency support.",
-    url: "https://finstarindustrial.com/contact",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Contact Finstar Industrial Systems" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Contact Finstar Industrial Systems",
-    description: "Get a free quote for industrial refrigeration, HVAC, boilers and cold rooms in Kenya.",
-    images: ["/og-image.png"],
-  },
-};
+    "Contact Finstar Industrial Systems Ltd in Nairobi for industrial refrigeration, HVAC, cold room, boiler, and engineering product quotes across Kenya and East Africa.",
+  path: "/contact",
+  keywords: [
+    "industrial refrigeration quote Kenya",
+    "HVAC contractors Kenya",
+    "cold room installation Kenya",
+    "industrial engineering Nairobi",
+  ],
+});
 
 export default function ContactPage() {
+  const breadcrumbs: BreadcrumbItem[] = [
+    { name: "Home", href: "/" },
+    { name: "Contact", href: "/contact" },
+  ];
+
   return (
     <div>
+      <ContactPageJsonLd />
+      <BreadcrumbJsonLd items={breadcrumbs} />
+      <FAQJsonLd faqs={contactFaqs} />
       {/* Header */}
       <div className="bg-gradient-to-br from-blue-900 to-blue-950 py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <nav className="flex items-center gap-2 text-blue-300 text-sm mb-4" aria-label="Breadcrumb">
-            <Link href="/" className="hover:text-white transition-colors">Home</Link>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-            <span className="text-white font-medium">Contact</span>
-          </nav>
+          <Breadcrumbs items={breadcrumbs} light />
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-3">Contact Us</h1>
           <p className="text-blue-200 text-lg max-w-2xl">
-            Have a project in mind? Need a quote or technical support? We&apos;d love to hear from you.
+            Contact our Nairobi team for industrial refrigeration, HVAC, cold room, boiler, and engineering product support across Kenya and East Africa.
           </p>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+        <section className="mb-10 grid gap-8 lg:grid-cols-[1.35fr_0.65fr]">
+          <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-8">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
+              Local SEO Signals
+            </p>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+              Nairobi-based industrial supply support for Kenya and East Africa
+            </h2>
+            <div className="mt-4 space-y-4 text-sm leading-8 text-slate-600 dark:text-slate-300">
+              <p>
+                Use this contact page when you need industrial refrigeration Kenya quotations, cold room installation Kenya support, HVAC systems Kenya sourcing, industrial boiler product guidance, or industrial engineering procurement assistance in Nairobi.
+              </p>
+              <p>
+                The page is structured for local search, Google rich results, and AI search engines with clear location data, business contact details, and service coverage across Kenya, Uganda, Tanzania, Rwanda, DRC Congo, and Burundi.
+              </p>
+            </div>
+          </article>
+
+          <aside className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-8">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
+              Fast Internal Paths
+            </p>
+            <div className="space-y-3 text-sm">
+              <Link href="/products/category/refrigeration" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
+                Industrial Refrigeration Kenya
+              </Link>
+              <Link href="/products/category/hvac" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
+                HVAC Systems Kenya
+              </Link>
+              <Link href="/products/category/cold-rooms" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
+                Cold Room Products Kenya
+              </Link>
+              <Link href="/products/category/boilers" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
+                Industrial Boilers Kenya
+              </Link>
+            </div>
+          </aside>
+        </section>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-12">
           {/* Contact Info */}
           <div className="space-y-6">
@@ -173,6 +211,14 @@ export default function ContactPage() {
             </Suspense>
           </div>
         </div>
+
+        <section className="mt-12">
+          <FAQSection
+            title="Contact and service coverage FAQs"
+            description="These answers help buyers and search engines understand where Finstar operates, what the business supplies, and how quotations are handled."
+            faqs={contactFaqs}
+          />
+        </section>
       </div>
     </div>
   );

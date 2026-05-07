@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import CategoryCard from "@/components/CategoryCard";
 import EmptyState from "@/components/EmptyState";
-import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/JsonLd";
+import FAQSection from "@/components/FAQSection";
+import { FAQJsonLd, ReviewAggregateJsonLd, ServicesJsonLd } from "@/components/JsonLd";
 import FeaturedProducts from "@/components/FeaturedProducts";
 import SectionWrapper, { SectionHeader } from "@/components/SectionWrapper";
 import ClientsSection, { type Client } from "@/components/ClientsSection"
@@ -10,37 +10,22 @@ import BrandsSection from "@/components/BrandSection";
 import ReviewsSection, { type GoogleReview } from "@/components/ReviewsSection";
 import { getCategories, getProducts } from "@/lib/api";
 import { services } from "@/lib/data";
+import { buildPageMetadata, homepageFaqs, SITE_URL } from "@/lib/seo";
 import { Category, Product } from "@/types";
 
-export const metadata: Metadata = {
-  title: "Industrial Refrigeration, HVAC & Boiler Solutions in Kenya",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Industrial Refrigeration, HVAC, Boiler and Cold Room Solutions in Kenya",
   description:
-    "Finstar Industrial Systems - Kenya's leading supplier and installer of industrial refrigeration, air conditioning (HVAC), steam boilers, cold rooms, and industrial fittings.",
-  alternates: { canonical: "/" },
-  openGraph: {
-    title:
-      "Finstar Industrial Systems | Refrigeration, HVAC & Boiler Solutions Kenya",
-    description:
-      "Kenya's leading supplier and installer of industrial refrigeration, HVAC, boilers, cold rooms and industrial fittings.",
-    url: "https://finstarindustrial.com",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Finstar Industrial Systems",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Finstar Industrial Systems | Refrigeration, HVAC & Boilers Kenya",
-    description:
-      "Kenya's leading supplier and installer of industrial refrigeration, HVAC and boilers.",
-    images: ["/og-image.png"],
-  },
-};
-
+    "Finstar Industrial Systems Ltd supplies industrial refrigeration equipment, HVAC systems, cold room products, industrial boilers, and engineering fittings in Nairobi, Kenya and across East Africa.",
+  path: "/",
+  keywords: [
+    "industrial refrigeration Kenya",
+    "HVAC systems Kenya",
+    "industrial boilers Kenya",
+    "cold room installation Kenya",
+    "industrial engineering Kenya",
+  ],
+});
 
 const clients: Client[] = [
   { name: "H Young & Company (EA) Ltd", logoUrl: "/HYoung.png" },
@@ -51,7 +36,6 @@ const clients: Client[] = [
   { name: "Bulk Stream", logoUrl: "/bulk.png" },
   { name: "Auto", logoUrl: "/auto.png" },
   { name: "Olesereni Hotel", logoUrl: "/olesereni.png" },
-
 ];
 
 const brands = [
@@ -69,7 +53,8 @@ const brands = [
   { name: "Maxron", logoUrl: "/maxron.png" },
   { name: "Westron", logoUrl: "/westron.png" },
   { name: "Maksal", logoUrl: "/maksal.png" },
-
+  { name: "autoflame", logoUrl: "/autoflame.png" },
+  { name: "john thompson", logoUrl: "/jthompson.png" },
 
 
 ];
@@ -80,11 +65,16 @@ async function getHomepageData(): Promise<{
   categories: Category[];
   featuredProducts: Product[];
 }> {
-  const [categories, featuredProducts] = await Promise.all([
+  const [categories, allProducts] = await Promise.all([
     getCategories(),
-    getProducts({ featured: true, pageSize: 6 }),
+    // Fetch ALL active products (no featured filter, high page size)
+    // so every category with 2+ products is guaranteed to appear.
+    getProducts({ pageSize: 200 }),
   ]);
-  return { categories, featuredProducts: featuredProducts.results };
+
+  // Keep only products that belong to a known category with 2+ products,
+  // but still pass everything through — FeaturedProducts handles filtering.
+  return { categories, featuredProducts: allProducts.results };
 }
 
 // Fetch Google reviews via our own API route (ISR-cached 24h server-side)
@@ -95,7 +85,7 @@ async function getReviews(): Promise<{
 }> {
   try {
     const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3000";
+      process.env.NEXT_PUBLIC_BASE_URL ?? SITE_URL;
     const res = await fetch(`${baseUrl}/api/reviews`, {
       next: { revalidate: 86400 },
     });
@@ -136,8 +126,11 @@ export default async function HomePage() {
 
   return (
     <>
-      <OrganizationJsonLd />
-      <WebsiteJsonLd />
+      <FAQJsonLd faqs={homepageFaqs} />
+      <ServicesJsonLd services={services.map((service) => ({ title: service.title, description: service.description }))} />
+      {totalRatings > 0 && (
+        <ReviewAggregateJsonLd ratingValue={overallRating} reviewCount={totalRatings} />
+      )}
 
       {/* ── 1. HERO ──────────────────────────────────────────────────────────── */}
       <section className="relative flex min-h-[85vh] items-center justify-center overflow-hidden">
@@ -199,7 +192,7 @@ export default async function HomePage() {
           <div className="mx-auto mt-10 grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-3">
             {[
               { value: "500+", label: "Clients Served" },
-              { value: "5", label: "Product Categories" },
+              { value: "1000+", label: "Products" },
               { value: "24/7", label: "Support Available" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
@@ -226,53 +219,30 @@ export default async function HomePage() {
         />
 
         {featuredProducts.length > 0 ? (
-          <>
-            <FeaturedProducts
-              featuredProducts={featuredProducts}
-              categories={categories}
-            />
-
-          </>
+          <FeaturedProducts
+            featuredProducts={featuredProducts}
+            categories={categories}
+          />
         ) : (
           <EmptyState
-            title={hasApiError ? "Failed to load products" : "No featured products yet"}
-            description="Featured equipment will appear here after products are published in the backend."
+            title={hasApiError ? "Failed to load products" : "No products available yet"}
+            description="Equipment will appear here after products are published in the backend."
             icon="🏭"
             action={{ label: "View Catalog", href: "/products" }}
           />
         )}
       </SectionWrapper>
 
-      {/* ── 3. PRODUCT CATEGORIES ────────────────────────────────────────────── */}
-      {/* <SectionWrapper className="bg-slate-50 py-12 dark:bg-slate-900/50 lg:py-16">
-        <SectionHeader
-          subtitle="What We Offer"
-          title="Our Product Categories"
-          description="A comprehensive range of industrial systems and equipment tailored to your needs."
-        />
-        {categories.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {categories.map((category) => (
-              <CategoryCard key={category.id} category={category} />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            title={hasApiError ? "Failed to load categories" : "No categories available"}
-            description="Product categories will appear here once backend data is available."
-            icon="📦"
-            action={{ label: "Browse Products", href: "/products" }}
-          />
-        )}
-      </SectionWrapper> */}
-
-      {/* ── 3.5. BRANDS ───────────────────────────────────────────────────────── */}
+      {/* ── 3. BRANDS ────────────────────────────────────────────────────────── */}
       <SectionWrapper className="bg-slate-50 py-12 dark:bg-slate-900/50 lg:py-16">
         <BrandsSection brands={brands} />
       </SectionWrapper>
 
       {/* ── 4. CLIENTS ───────────────────────────────────────────────────────── */}
-      <ClientsSection clients={clients} />
+      <SectionWrapper className="bg-slate-50 py-12 dark:bg-slate-900/50 lg:py-16">
+        <ClientsSection clients={clients} />
+      </SectionWrapper>
+
 
       {/* ── 5. GOOGLE REVIEWS ────────────────────────────────────────────────── */}
       {reviews.length > 0 && (
@@ -314,6 +284,58 @@ export default async function HomePage() {
             </div>
           ))}
         </div>
+      </SectionWrapper>
+
+      <SectionWrapper className="bg-slate-50 py-12 dark:bg-slate-900/50 lg:py-16">
+        <div className="grid gap-8 lg:grid-cols-[1.4fr_0.6fr]">
+          <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-8">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
+              Industrial SEO Authority
+            </p>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+              Trusted industrial systems expertise for Nairobi, Kenya, and East Africa
+            </h2>
+            <div className="mt-4 space-y-4 text-sm leading-8 text-slate-600 dark:text-slate-300">
+              <p>
+                Finstar Industrial Systems Ltd helps businesses sourcing industrial refrigeration Kenya, HVAC systems Kenya, cold room installation Kenya, industrial boilers Kenya, and industrial fittings Kenya. The site is structured around product entities, service intent, local business signals, and category landing pages so search engines and AI assistants can clearly interpret what the business supplies and where it operates.
+              </p>
+              <p>
+                From industrial cooling systems Nairobi to cold storage solutions East Africa, Finstar supports procurement teams, contractors, engineers, and facility operators with equipment discovery, specification review, and quotation paths that align with commercial buying behavior across Kenya, Uganda, Tanzania, Rwanda, DRC Congo, and Burundi.
+              </p>
+            </div>
+          </article>
+
+          <aside className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-8">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
+              Topical Links
+            </p>
+            <div className="space-y-3 text-sm">
+              <Link href="/products/category/refrigeration" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
+                Industrial Refrigeration Kenya
+              </Link>
+              <Link href="/products/category/hvac" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
+                HVAC Systems Kenya
+              </Link>
+              <Link href="/products/category/boilers" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
+                Industrial Boilers Kenya
+              </Link>
+              <Link href="/products/category/cold-rooms" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
+                Cold Room Products Kenya
+              </Link>
+              <Link href="/contact" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
+                Request a quote from Nairobi
+              </Link>
+            </div>
+          </aside>
+        </div>
+      </SectionWrapper>
+
+      <SectionWrapper className="py-12 lg:py-16">
+        <FAQSection
+          title="Industrial systems FAQs for Kenya and East Africa"
+          description="Conversational answers that improve local SEO, AI-search visibility, and buyer clarity for industrial procurement terms."
+          faqs={homepageFaqs}
+        />
       </SectionWrapper>
 
       {/* ── 7. CTA ───────────────────────────────────────────────────────────── */}
@@ -363,7 +385,8 @@ export default async function HomePage() {
             </a>
           </div>
         </div>
-      </section>
+      </section >
     </>
+
   );
 }

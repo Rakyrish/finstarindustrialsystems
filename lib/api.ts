@@ -46,6 +46,7 @@ export interface ApiProduct {
   short_description: string;
   category: ApiCategory;
   image_url: string;
+  image_urls?: string[];
   is_active: boolean;
   featured: boolean;
   specs: Record<string, string> | null;
@@ -272,14 +273,21 @@ function mapProductCategory(category: ApiCategory): ProductCategory {
 }
 
 function mapProduct(product: ApiProduct): Product {
+  const imageUrls = Array.isArray(product.image_urls)
+    ? product.image_urls.filter((value): value is string => typeof value === "string" && value.length > 0)
+    : product.image_url
+      ? [product.image_url]
+      : [];
+
   return {
     id: product.id,
     name: product.name,
     slug: product.slug,
-    description: product.description,
+    description: product.description ?? "",
     shortDescription: product.short_description,
     category: mapProductCategory(product.category),
     imageUrl: product.image_url,
+    imageUrls,
     isActive: product.is_active,
     featured: product.featured,
     specs: product.specs,
@@ -748,19 +756,34 @@ export interface AIProductResponse {
   description: string;
 }
 
-export async function generateProductWithAI(input: File | string): Promise<AIProductResponse> {
-  if (input instanceof File) {
+interface GenerateProductWithAIInput {
+  image: File | string;
+  referenceUrl?: string;
+}
+
+export async function generateProductWithAI({
+  image,
+  referenceUrl,
+}: GenerateProductWithAIInput): Promise<AIProductResponse> {
+  if (image instanceof File) {
     const formData = new FormData();
-    formData.append("image", input);
+    formData.append("image", image);
+    if (referenceUrl) {
+      formData.append("reference_url", referenceUrl);
+    }
     return authFetchAPI<AIProductResponse>("/admin/ai/generate-product", {
       method: "POST",
       body: formData,
     });
   }
+
   return authFetchAPI<AIProductResponse>("/admin/ai/generate-product", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ image_url: input }),
+    body: JSON.stringify({
+      image_url: image,
+      ...(referenceUrl ? { reference_url: referenceUrl } : {}),
+    }),
   });
 }
 

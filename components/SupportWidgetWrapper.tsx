@@ -1,7 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
-import SupportWidget from "@/components/SupportWidget";
+
+const SupportWidget = dynamic(() => import("@/components/SupportWidget"), {
+  ssr: false,
+});
 
 /**
  * Wrapper that renders the support widget.
@@ -9,8 +13,7 @@ import SupportWidget from "@/components/SupportWidget";
 export default function SupportWidgetWrapper() {
     const pathname = usePathname();
 
-    // Temporarily showing on all pages for testing
-    // if (pathname.startsWith("/admin")) return null;
+    if (pathname.startsWith("/admin")) return null;
 
     return <SupportWidget />;
 }
