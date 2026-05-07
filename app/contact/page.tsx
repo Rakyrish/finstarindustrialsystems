@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     title: "Contact Finstar Industrial Systems | Free Quote for Industrial Equipment",
     description:
       "Reach our expert team in Nairobi for industrial refrigeration, HVAC, boiler, and cold room quotes. Fast response. 24/7 emergency support.",
-    url: "https://finstarindustrial.com/contact",
+    url: "https://finstarindustrials.com/contact",
     images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Contact Finstar Industrial Systems" }],
   },
   twitter: {

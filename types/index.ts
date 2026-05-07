@@ -23,6 +23,7 @@ export interface Product {
   shortDescription: string;
   category: ProductCategory;
   imageUrl: string;
+  imageUrls: string[];
   isActive: boolean;
   featured: boolean;
   specs: Record<string, string> | null;

@@ -28,22 +28,38 @@ export default function FeaturedProducts({
         );
     }, [deferredQuery, featuredProducts]);
 
-    // Group filtered products by category (preserving category order)
-    const productsByCategory = categories
-        .map((category) => ({
-            category,
-            products: filteredProducts.filter(
-                (product) => product.category.slug === category.slug,
-            ),
-        }))
-        .filter(({ products }) => products.length > 0);
+    // Always show categories that have 2+ total products (not filtered count).
+    // During search, show matched products inside each category.
+    // If search produces 0 matches in a category, show the category header
+    // with an empty-state message rather than hiding it entirely.
+    const productsByCategory = useMemo(() => {
+        return categories
+            .map((category) => {
+                // Total products in this category (ignoring search)
+                const totalProducts = featuredProducts.filter(
+                    (p) => p.category.slug === category.slug,
+                );
+                // Products matching the current search within this category
+                const matchedProducts = filteredProducts.filter(
+                    (p) => p.category.slug === category.slug,
+                );
+                return { category, products: matchedProducts, total: totalProducts.length };
+            })
+            // Only include categories that have 2 or more total products
+            .filter(({ total }) => total >= 2);
+    }, [categories, featuredProducts, filteredProducts]);
 
     const uncategorised = filteredProducts.filter(
         (product) =>
             !categories.some((category) => category.slug === product.category.slug),
     );
 
-    const hasResults = productsByCategory.length > 0 || uncategorised.length > 0;
+    // Global search has results if any category has matched products OR uncategorised has results
+    const hasAnyResults =
+        productsByCategory.some(({ products }) => products.length > 0) ||
+        uncategorised.length > 0;
+
+    const isSearching = deferredQuery.trim().length > 0;
 
     return (
         <div>
@@ -62,12 +78,7 @@ export default function FeaturedProducts({
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                 >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
                 {searchQuery && (
                     <button
@@ -82,8 +93,8 @@ export default function FeaturedProducts({
                 )}
             </div>
 
-            {/* Results */}
-            {!hasResults ? (
+            {/* Global no-results (only when searching AND truly nothing matches anywhere) */}
+            {isSearching && !hasAnyResults ? (
                 <div className="py-16 text-center">
                     <p className="text-4xl mb-3">🔍</p>
                     <p className="text-slate-600 dark:text-slate-400 font-medium">
@@ -98,7 +109,7 @@ export default function FeaturedProducts({
                 </div>
             ) : (
                 <div className="space-y-12">
-                    {productsByCategory.map(({ category, products }) => (
+                    {productsByCategory.map(({ category, products, total }) => (
                         <div key={category.id}>
                             {/* Category subheading */}
                             <div className="mb-4 flex items-center justify-between">
@@ -107,7 +118,8 @@ export default function FeaturedProducts({
                                         {category.name}
                                     </h3>
                                     <span className="rounded-full bg-orange-100 dark:bg-orange-900/30 px-2.5 py-0.5 text-xs font-semibold text-orange-600 dark:text-orange-400">
-                                        {products.length}
+                                        {/* Show matched count during search, total otherwise */}
+                                        {isSearching ? `${products.length} of ${total}` : total}
                                     </span>
                                 </div>
                                 <Link
@@ -124,16 +136,32 @@ export default function FeaturedProducts({
                             {/* Orange gradient divider */}
                             <div className="mb-6 h-px bg-gradient-to-r from-orange-400 via-orange-200 to-transparent dark:from-orange-600 dark:via-orange-900/40" />
 
-                            {/* Products grid */}
-                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-                                {products.map((product) => (
-                                    <ProductCard key={product.id} product={product} />
-                                ))}
-                            </div>
+                            {/* Products grid or per-category empty state */}
+                            {products.length > 0 ? (
+                                <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
+                                    {products.map((product) => (
+                                        <ProductCard key={product.id} product={product} />
+                                    ))}
+                                </div>
+                            ) : (
+                                /* Category is visible but search matched nothing inside it */
+                                <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700 py-10 text-center">
+                                    <p className="text-2xl">📦</p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                                        No products in this category match &ldquo;{searchQuery}&rdquo;
+                                    </p>
+                                    <Link
+                                        href={`/products?category=${category.slug}`}
+                                        className="text-xs font-semibold text-orange-500 hover:text-orange-400 transition-colors"
+                                    >
+                                        Browse all {category.name} →
+                                    </Link>
+                                </div>
+                            )}
                         </div>
                     ))}
 
-                    {/* Fallback for uncategorised */}
+                    {/* Uncategorised fallback */}
                     {uncategorised.length > 0 && (
                         <div>
                             <div className="mb-4 flex items-center gap-2">
@@ -156,11 +184,11 @@ export default function FeaturedProducts({
             )}
 
             {/* View all CTA */}
-            {hasResults && (
+            {!isSearching && (
                 <div className="mt-12 text-center">
                     <Link
                         href="/products"
-                        className="inline-flex items-center gap-2 rounded-xl border-2 border-blue-800 px-8 py-3.5 font-semibold text-blue-800 transition-all duration-200 hover:bg-blue-800 hover:text-white"
+                        className="inline-flex items-center gap-2 rounded-xl border-2 border-blue-800 px-8 py-3.5 font-semibold text-blue-800 transition-all duration-200 hover:bg-blue-800 hover:text-white dark:border-blue-500 dark:text-blue-400 dark:hover:bg-blue-600 dark:hover:text-white dark:hover:border-blue-600"
                     >
                         View All Products
                         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

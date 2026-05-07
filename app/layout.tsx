@@ -10,7 +10,7 @@ const inter = Inter({
   display: "swap",
 });
 
-const BASE_URL = "https://finstarindustrial.com";
+const BASE_URL = "https://finstarindustrials.com";
 
 export const metadata: Metadata = {
   // ── Base URL (required for all absolute og/sitemap URLs) ──────────────────
@@ -62,7 +62,7 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: BASE_URL,
-    siteName: "Finstar Industrial Systems",
+    siteName: "Finstar Industrials Systems",
     title:
       "Finstar Industrial Systems | Refrigeration, HVAC & Boiler Solutions Kenya",
     description:

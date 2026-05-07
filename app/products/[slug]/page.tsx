@@ -10,7 +10,7 @@ import { getCategoryIcon } from "@/lib/data";
 import { Product } from "@/types";
 import ContactButtons from "@/components/ContactButtons";
 
-const BASE_URL = "https://finstarindustrial.com";
+const BASE_URL = "https://finstarindustrials.com";
 
 interface ProductDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -119,6 +119,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               <Image
                 src={product.imageUrl}
                 alt={product.name}
+                aria-label={product.name}
                 fill
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover"
@@ -131,7 +132,17 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-sm backdrop-blur">
                 {categoryIcon} {product.category.name}
               </span>
+
             </div>
+            <div className="absolute bottom-4 left-4">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/90 dark:bg-slate-900/90 px-3 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 shadow-sm backdrop-blur">
+                <img src="/logo.png" width={40} height={40} alt="Finstar Logo" />
+              </span>
+
+            </div>
+
+
+
           </div>
 
           {/* Summary + CTA */}

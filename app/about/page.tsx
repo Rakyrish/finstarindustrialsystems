@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     title: "About Finstar Industrial Systems | Kenya's #1 Industrial Equipment Company",
     description:
       "Founded in 2005, Finstar Industrial Systems has delivered 1,200+ refrigeration, HVAC, boiler, and cold room projects across East Africa. Meet our expert team.",
-    url: "https://finstarindustrial.com/about",
+    url: "https://finstarindustrials.com/about",
     images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Finstar Industrial Systems Team" }],
   },
   twitter: {
@@ -76,7 +76,6 @@ export default function AboutPage() {
           <div className="grid grid-cols-2 gap-4">
             {[
               { value: "500+", label: "Satisfied Clients", icon: "🤝" },
-              { value: "20+", label: "Years of Experience", icon: "🏆" },
               { value: "1,200+", label: "Projects Completed", icon: "⚙️" },
               { value: "150+", label: "Team Members", icon: "👷" },
             ].map((stat) => (

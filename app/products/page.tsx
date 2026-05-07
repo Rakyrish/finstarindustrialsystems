@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     title: "Industrial Products | Refrigeration, HVAC, Boilers & Cold Rooms - Finstar",
     description:
       "Shop industrial-grade refrigeration, HVAC, boilers, cold rooms, and fittings trusted across East Africa.",
-    url: "https://finstarindustrial.com/products",
+    url: "https://finstarindustrials.com/products",
     images: [
       {
         url: "/og-image.png",

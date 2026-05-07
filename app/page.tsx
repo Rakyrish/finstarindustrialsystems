@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import CategoryCard from "@/components/CategoryCard";
 import EmptyState from "@/components/EmptyState";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/components/JsonLd";
 import FeaturedProducts from "@/components/FeaturedProducts";
@@ -22,7 +21,7 @@ export const metadata: Metadata = {
       "Finstar Industrial Systems | Refrigeration, HVAC & Boiler Solutions Kenya",
     description:
       "Kenya's leading supplier and installer of industrial refrigeration, HVAC, boilers, cold rooms and industrial fittings.",
-    url: "https://finstarindustrial.com",
+    url: "https://finstarindustrials.com",
     images: [
       {
         url: "/og-image.png",
@@ -41,7 +40,6 @@ export const metadata: Metadata = {
   },
 };
 
-
 const clients: Client[] = [
   { name: "H Young & Company (EA) Ltd", logoUrl: "/HYoung.png" },
   { name: "Persea", logoUrl: "/persea.png" },
@@ -51,7 +49,6 @@ const clients: Client[] = [
   { name: "Bulk Stream", logoUrl: "/bulk.png" },
   { name: "Auto", logoUrl: "/auto.png" },
   { name: "Olesereni Hotel", logoUrl: "/olesereni.png" },
-
 ];
 
 const brands = [
@@ -69,7 +66,8 @@ const brands = [
   { name: "Maxron", logoUrl: "/maxron.png" },
   { name: "Westron", logoUrl: "/westron.png" },
   { name: "Maksal", logoUrl: "/maksal.png" },
-
+  { name: "autoflame", logoUrl: "/autoflame.png" },
+  { name: "john thompson", logoUrl: "/jthompson.png" },
 
 
 ];
@@ -80,11 +78,16 @@ async function getHomepageData(): Promise<{
   categories: Category[];
   featuredProducts: Product[];
 }> {
-  const [categories, featuredProducts] = await Promise.all([
+  const [categories, allProducts] = await Promise.all([
     getCategories(),
-    getProducts({ featured: true, pageSize: 6 }),
+    // Fetch ALL active products (no featured filter, high page size)
+    // so every category with 2+ products is guaranteed to appear.
+    getProducts({ pageSize: 200 }),
   ]);
-  return { categories, featuredProducts: featuredProducts.results };
+
+  // Keep only products that belong to a known category with 2+ products,
+  // but still pass everything through — FeaturedProducts handles filtering.
+  return { categories, featuredProducts: allProducts.results };
 }
 
 // Fetch Google reviews via our own API route (ISR-cached 24h server-side)
@@ -199,7 +202,7 @@ export default async function HomePage() {
           <div className="mx-auto mt-10 grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-3">
             {[
               { value: "500+", label: "Clients Served" },
-              { value: "5", label: "Product Categories" },
+              { value: "1000+", label: "Products" },
               { value: "24/7", label: "Support Available" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
@@ -226,53 +229,30 @@ export default async function HomePage() {
         />
 
         {featuredProducts.length > 0 ? (
-          <>
-            <FeaturedProducts
-              featuredProducts={featuredProducts}
-              categories={categories}
-            />
-
-          </>
+          <FeaturedProducts
+            featuredProducts={featuredProducts}
+            categories={categories}
+          />
         ) : (
           <EmptyState
-            title={hasApiError ? "Failed to load products" : "No featured products yet"}
-            description="Featured equipment will appear here after products are published in the backend."
+            title={hasApiError ? "Failed to load products" : "No products available yet"}
+            description="Equipment will appear here after products are published in the backend."
             icon="🏭"
             action={{ label: "View Catalog", href: "/products" }}
           />
         )}
       </SectionWrapper>
 
-      {/* ── 3. PRODUCT CATEGORIES ────────────────────────────────────────────── */}
-      {/* <SectionWrapper className="bg-slate-50 py-12 dark:bg-slate-900/50 lg:py-16">
-        <SectionHeader
-          subtitle="What We Offer"
-          title="Our Product Categories"
-          description="A comprehensive range of industrial systems and equipment tailored to your needs."
-        />
-        {categories.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {categories.map((category) => (
-              <CategoryCard key={category.id} category={category} />
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            title={hasApiError ? "Failed to load categories" : "No categories available"}
-            description="Product categories will appear here once backend data is available."
-            icon="📦"
-            action={{ label: "Browse Products", href: "/products" }}
-          />
-        )}
-      </SectionWrapper> */}
-
-      {/* ── 3.5. BRANDS ───────────────────────────────────────────────────────── */}
+      {/* ── 3. BRANDS ────────────────────────────────────────────────────────── */}
       <SectionWrapper className="bg-slate-50 py-12 dark:bg-slate-900/50 lg:py-16">
         <BrandsSection brands={brands} />
       </SectionWrapper>
 
       {/* ── 4. CLIENTS ───────────────────────────────────────────────────────── */}
-      <ClientsSection clients={clients} />
+      <SectionWrapper className="bg-slate-50 py-12 dark:bg-slate-900/50 lg:py-16">
+        <ClientsSection clients={clients} />
+      </SectionWrapper>
+
 
       {/* ── 5. GOOGLE REVIEWS ────────────────────────────────────────────────── */}
       {reviews.length > 0 && (
@@ -363,7 +343,8 @@ export default async function HomePage() {
             </a>
           </div>
         </div>
-      </section>
+      </section >
     </>
+
   );
 }
