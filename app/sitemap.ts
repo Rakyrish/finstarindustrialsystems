@@ -1,32 +1,31 @@
 import { MetadataRoute } from "next";
 import { getCategories, getProducts } from "@/lib/api";
-
-const BASE_URL = "https://finstarindustrials.com";
+import { buildCategoryPath, SITE_URL } from "@/lib/seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {
-      url: BASE_URL,
+      url: SITE_URL,
       lastModified: now,
       changeFrequency: "weekly",
       priority: 1,
     },
     {
-      url: `${BASE_URL}/about`,
+      url: `${SITE_URL}/about`,
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.8,
     },
     {
-      url: `${BASE_URL}/products`,
+      url: `${SITE_URL}/products`,
       lastModified: now,
-      changeFrequency: "weekly",
+      changeFrequency: "daily",
       priority: 0.9,
     },
     {
-      url: `${BASE_URL}/contact`,
+      url: `${SITE_URL}/contact`,
       lastModified: now,
       changeFrequency: "monthly",
       priority: 0.7,
@@ -40,17 +39,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ]);
 
     const categoryRoutes: MetadataRoute.Sitemap = categories.map((category) => ({
-      url: `${BASE_URL}/products?category=${category.slug}`,
+      url: `${SITE_URL}${buildCategoryPath(category.slug)}`,
       lastModified: now,
       changeFrequency: "weekly",
-      priority: 0.8,
+      priority: 0.85,
     }));
 
     const productRoutes: MetadataRoute.Sitemap = products.results.map((product) => ({
-      url: `${BASE_URL}/products/${product.slug}`,
+      url: `${SITE_URL}/products/${product.slug}`,
       lastModified: product.updatedAt || now,
-      changeFrequency: "monthly",
-      priority: 0.7,
+      changeFrequency: "weekly",
+      priority: 0.75,
     }));
 
     return [...staticRoutes, ...categoryRoutes, ...productRoutes];

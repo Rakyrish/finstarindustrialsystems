@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { buildCategoryPath } from "@/lib/seo";
 import { Category } from "@/types";
 
 interface CategoryCardProps {
@@ -7,7 +8,7 @@ interface CategoryCardProps {
 
 export default function CategoryCard({ category }: CategoryCardProps) {
   return (
-    <Link href={`/products?category=${category.slug}`} className="group block">
+    <Link href={buildCategoryPath(category.slug)} className="group block">
       <article className="relative bg-white dark:bg-slate-900 rounded-2xl p-6 shadow-md dark:shadow-slate-900/50 hover:shadow-2xl dark:hover:shadow-slate-900/80 transition-all duration-300 hover:-translate-y-1 border border-slate-100 dark:border-slate-800 overflow-hidden">
         {/* Background decoration */}
         <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />

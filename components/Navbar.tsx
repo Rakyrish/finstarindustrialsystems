@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { navigationCategories } from "@/lib/data";
+import { buildCategoryPath } from "@/lib/seo";
 import { ThemeToggle } from "./ThemeToggle";
 
 export default function Navbar() {
@@ -38,11 +40,12 @@ export default function Navbar() {
           <Link href="/" onClick={closeAll} className="flex items-center gap-3 group shrink-0">
             <div className="flex items-center gap-3">
 
-              <img
+              <Image
                 src="/logo.png"
-                alt="Finstar Logo"
+                alt="Finstar Industrial Systems Ltd logo"
                 width={64}
                 height={64}
+                priority
                 className="h-16 w-16 object-contain flex-shrink-0"
               />
               <div className="flex flex-col justify-center leading-tight">
@@ -90,10 +93,10 @@ export default function Navbar() {
                     >
                       🛍️ All Products
                     </Link>
-                    {navigationCategories.map((cat) => (
+                    {navigationCategories.slice(0, 10).map((cat) => (
                       <Link
                         key={cat.id}
-                        href={`/products?category=${cat.slug}`}
+                        href={buildCategoryPath(cat.slug)}
                         onClick={closeAll}
                         className="flex items-center gap-2 px-3 py-2 text-slate-600 dark:text-slate-400 hover:bg-orange-50 dark:hover:bg-slate-800 hover:text-orange-700 dark:hover:text-orange-400 rounded-lg transition-colors text-sm font-medium"
                       >
@@ -164,8 +167,8 @@ export default function Navbar() {
               {isProductsDropdownOpen && (
                 <div className="ml-4 mt-1 space-y-1 border-l-2 border-orange-400 pl-3">
                   <MobileNavLink href="/products" onClick={closeAll}>🛍️ All Products</MobileNavLink>
-                  {navigationCategories.map((cat) => (
-                    <MobileNavLink key={cat.id} href={`/products?category=${cat.slug}`} onClick={closeAll}>
+                  {navigationCategories.slice(0, 10).map((cat) => (
+                    <MobileNavLink key={cat.id} href={buildCategoryPath(cat.slug)} onClick={closeAll}>
                       {cat.icon} {cat.name}
                     </MobileNavLink>
                   ))}

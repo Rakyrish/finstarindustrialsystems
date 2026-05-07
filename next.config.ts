@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // ── Standalone output for Docker ──────────────────────────────────────────
   output: "standalone",
+  poweredByHeader: false,
 
   // ── Allow dev network access ──────────────────────────────────────────────
   allowedDevOrigins: ["192.168.2.113"],
@@ -18,6 +19,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "finstarindustrial.com",
+      },
+      {
+        protocol: "https",
+        hostname: "finstarindustrials.com",
       },
       {
         protocol: "https",
@@ -47,12 +52,23 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: [
+          { key: "X-DNS-Prefetch-Control", value: "on" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains; preload" },
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=(self)",
+          },
+        ],
+      },
+      {
+        source: "/(sitemap.xml|image-sitemap.xml|robots.txt|manifest.webmanifest)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, s-maxage=3600, stale-while-revalidate=86400",
           },
         ],
       },

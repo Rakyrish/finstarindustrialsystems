@@ -3,6 +3,7 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
+import { buildCategoryPath } from "@/lib/seo";
 import { Category, Product } from "@/types";
 
 interface FeaturedProductsProps {
@@ -123,7 +124,7 @@ export default function FeaturedProducts({
                                     </span>
                                 </div>
                                 <Link
-                                    href={`/products?category=${category.slug}`}
+                                    href={buildCategoryPath(category.slug)}
                                     className="flex whitespace-nowrap items-center gap-1 text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-orange-500 dark:hover:text-orange-400 transition-colors"
                                 >
                                     View all
@@ -151,7 +152,7 @@ export default function FeaturedProducts({
                                         No products in this category match &ldquo;{searchQuery}&rdquo;
                                     </p>
                                     <Link
-                                        href={`/products?category=${category.slug}`}
+                                        href={buildCategoryPath(category.slug)}
                                         className="text-xs font-semibold text-orange-500 hover:text-orange-400 transition-colors"
                                     >
                                         Browse all {category.name} →

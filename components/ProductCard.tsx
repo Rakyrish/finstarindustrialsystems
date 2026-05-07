@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getCategoryIcon } from "@/lib/data";
+import { productImageAlt } from "@/lib/seo";
 import type { Product } from "@/types";
 
 interface ProductCardProps {
@@ -71,7 +72,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                     <div key={`${imageUrl}-${index}`} className="relative overflow-hidden rounded-xl">
                       <Image
                         src={imageUrl}
-                        alt={`${product.name} view ${index + 1}`}
+                        alt={productImageAlt(product, `gallery view ${index + 1}`)}
                         fill
                         sizes="(max-width: 640px) 25vw, (max-width: 1280px) 20vw, 15vw"
                         className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
@@ -82,7 +83,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               ) : (
                 <Image
                   src={imageGrid[0]}
-                  alt={product.name}
+                  alt={productImageAlt(product)}
                   fill
                   sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 25vw"
                   className="object-cover transition-transform duration-500 group-hover:scale-105"

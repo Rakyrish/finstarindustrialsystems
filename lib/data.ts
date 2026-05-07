@@ -4,6 +4,41 @@ export const categoryDirectory: Record<
   string,
   Pick<CategoryLink, "name" | "description" | "icon">
 > = {
+  refrigeration: {
+    name: "Industrial Refrigeration",
+    description:
+      "Industrial refrigeration systems, cold storage components, and commercial cooling equipment for food, pharma, hospitality, and manufacturing in Kenya.",
+    icon: "❄️",
+  },
+
+  hvac: {
+    name: "HVAC Systems",
+    description:
+      "HVAC systems, air conditioning equipment, ventilation solutions, and climate control products for industrial and commercial projects in Kenya.",
+    icon: "🌬️",
+  },
+
+  boilers: {
+    name: "Industrial Boilers",
+    description:
+      "Industrial boiler systems, burners, steam accessories, and process heating equipment for plants, institutions, and factories in East Africa.",
+    icon: "🔥",
+  },
+
+  "cold-rooms": {
+    name: "Cold Rooms",
+    description:
+      "Cold room equipment, cold storage products, insulation panels, and refrigeration accessories for temperature-controlled projects in Kenya.",
+    icon: "🧊",
+  },
+
+  fittings: {
+    name: "Industrial Fittings",
+    description:
+      "Industrial fittings, accessories, and support components for refrigeration, HVAC, steam, and plant maintenance systems in Kenya.",
+    icon: "🔧",
+  },
+
   "refrigeration-air-conditioning-hvac": {
     name: "Refrigeration ",
     description:

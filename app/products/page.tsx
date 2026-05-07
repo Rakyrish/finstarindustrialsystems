@@ -1,37 +1,67 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import EmptyState from "@/components/EmptyState";
+import FAQSection from "@/components/FAQSection";
+import {
+  BreadcrumbJsonLd,
+  CollectionPageJsonLd,
+  FAQJsonLd,
+} from "@/components/JsonLd";
 import ProductsClient from "./ProductsClient";
 import { getCategories, getProducts } from "@/lib/api";
-import { Category, Product } from "@/types";
+import type { Category, Product } from "@/types";
+import {
+  buildPageMetadata,
+  buildCategoryPath,
+  catalogueFaqs,
+  type BreadcrumbItem,
+} from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Industrial Equipment Products - Refrigeration, HVAC, Boilers & Cold Rooms",
-  description:
-    "Browse Finstar's industrial refrigeration systems, HVAC units, steam boilers, cold rooms, and industrial fittings.",
-  alternates: { canonical: "/products" },
-  openGraph: {
-    title: "Industrial Products | Refrigeration, HVAC, Boilers & Cold Rooms - Finstar",
+interface ProductsPageProps {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}
+
+export async function generateMetadata({
+  searchParams,
+}: ProductsPageProps): Promise<Metadata> {
+  const params = (await searchParams) ?? {};
+  const category = typeof params.category === "string" ? params.category : "";
+  const search = typeof params.search === "string" ? params.search.trim() : "";
+
+  if (search) {
+    return buildPageMetadata({
+      title: "Industrial Equipment Search Results in Kenya",
+      description:
+        "Search the Finstar industrial equipment catalogue for refrigeration, HVAC, cold room, boiler, and engineering products in Kenya.",
+      path: "/products",
+      noIndex: true,
+    });
+  }
+
+  if (category) {
+    return buildPageMetadata({
+      title: "Industrial Product Filters",
+      description:
+        "Filtered industrial product listings for refrigeration, HVAC, cold room, and boiler equipment in Kenya.",
+      path: buildCategoryPath(category),
+      noIndex: true,
+    });
+  }
+
+  return buildPageMetadata({
+    title: "Industrial Equipment Catalogue in Kenya",
     description:
-      "Shop industrial-grade refrigeration, HVAC, boilers, cold rooms, and fittings trusted across East Africa.",
-    url: "https://finstarindustrials.com/products",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Finstar Industrial Products",
-      },
+      "Browse industrial refrigeration equipment, HVAC systems, cold room products, industrial boilers, and engineering fittings supplied by Finstar Industrial Systems Ltd in Nairobi, Kenya and East Africa.",
+    path: "/products",
+    keywords: [
+      "industrial equipment catalogue Kenya",
+      "refrigeration equipment suppliers Kenya",
+      "industrial engineering Kenya",
+      "cold storage solutions East Africa",
     ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Industrial Products | Finstar Industrial Systems",
-    description:
-      "Industrial-grade refrigeration, HVAC, boilers, cold rooms and fittings for East Africa.",
-    images: ["/og-image.png"],
-  },
-};
+  });
+}
 
 async function getProductsPageData(): Promise<{
   products: Product[];
@@ -61,48 +91,132 @@ export default async function ProductsPage() {
     hasApiError = true;
   }
 
+  const breadcrumbs: BreadcrumbItem[] = [
+    { name: "Home", href: "/" },
+    { name: "Products", href: "/products" },
+  ];
+
   return (
     <div>
+      <CollectionPageJsonLd
+        name="Industrial Equipment Catalogue in Kenya"
+        description="Industrial refrigeration, HVAC, cold room, boiler, and engineering product catalogue for Kenya and East Africa."
+        path="/products"
+        products={products}
+      />
+      <BreadcrumbJsonLd items={breadcrumbs} />
+      <FAQJsonLd faqs={catalogueFaqs} />
+
       <div className="bg-gradient-to-br from-blue-900 to-blue-950 px-4 py-14 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
-          <nav
-            className="mb-4 flex items-center gap-2 text-sm text-blue-300"
-            aria-label="Breadcrumb"
-          >
-            <Link href="/" className="transition-colors hover:text-white">
-              Home
-            </Link>
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-            <span className="font-medium text-white">Products</span>
-          </nav>
-          <h1 className="mb-3 text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl">
-            Our Products
+          <Breadcrumbs items={breadcrumbs} light />
+          <h1 className="mt-6 text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl">
+            Industrial Equipment Catalogue for Kenya and East Africa
           </h1>
-          <p className="max-w-2xl text-lg text-blue-200">
-            Industrial-grade equipment for refrigeration, HVAC, boilers, cold
-            rooms, and more.
+          <p className="seo-summary mt-4 max-w-3xl text-lg leading-8 text-blue-200">
+            Explore industrial refrigeration equipment, HVAC systems, cold room solutions, industrial boilers, and engineering fittings supplied from Nairobi by Finstar Industrial Systems Ltd.
           </p>
+          <div className="mt-6 flex flex-wrap gap-3 text-sm font-semibold text-blue-100">
+            <Link href="/products/category/refrigeration" className="rounded-full border border-white/20 px-4 py-2 transition hover:bg-white/10">
+              Industrial Refrigeration Kenya
+            </Link>
+            <Link href="/products/category/hvac" className="rounded-full border border-white/20 px-4 py-2 transition hover:bg-white/10">
+              HVAC Systems Kenya
+            </Link>
+            <Link href="/products/category/boilers" className="rounded-full border border-white/20 px-4 py-2 transition hover:bg-white/10">
+              Industrial Boilers Kenya
+            </Link>
+            <Link href="/products/category/cold-rooms" className="rounded-full border border-white/20 px-4 py-2 transition hover:bg-white/10">
+              Cold Room Products Kenya
+            </Link>
+          </div>
         </div>
       </div>
 
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
+        <section className="mb-10 grid gap-8 lg:grid-cols-[1.65fr_0.85fr]">
+          <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-8">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
+              Catalogue Overview
+            </p>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+              Product discovery built for engineers, contractors, and procurement teams
+            </h2>
+            <div className="mt-4 space-y-4 text-sm leading-8 text-slate-600 dark:text-slate-300">
+              <p>
+                This catalogue is designed to help buyers researching industrial refrigeration Kenya, HVAC systems Kenya, industrial boilers Kenya, cold room installation Kenya, and industrial fittings Kenya. Dedicated product pages, crawlable category routes, and machine-readable schema make the site easier for Google, Bing, AI Overviews, ChatGPT search, Perplexity, and Gemini to interpret.
+              </p>
+              <p>
+                Use the filters below for quick browsing, then visit the linked category landing pages for focused content around industrial cooling systems Nairobi, refrigeration equipment suppliers Kenya, cold storage solutions East Africa, and related industrial engineering search intent.
+              </p>
+            </div>
+          </article>
+
+          <aside className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
+              High-Intent Category Links
+            </p>
+            <div className="space-y-3">
+              <Link href="/products/category/refrigeration" className="block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-orange-300 hover:text-orange-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                Industrial Refrigeration Equipment
+              </Link>
+              <Link href="/products/category/hvac" className="block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-orange-300 hover:text-orange-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                HVAC and Air Conditioning Systems
+              </Link>
+              <Link href="/products/category/boilers" className="block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-orange-300 hover:text-orange-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                Industrial Boilers and Steam Systems
+              </Link>
+              <Link href="/products/category/cold-rooms" className="block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-orange-300 hover:text-orange-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
+                Cold Room and Cold Storage Products
+              </Link>
+              <Link href="/contact" className="block rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-700 transition hover:bg-orange-100 dark:border-orange-500/30 dark:bg-orange-500/10 dark:text-orange-300">
+                Request a quote from Nairobi
+              </Link>
+            </div>
+          </aside>
+        </section>
+
         {hasApiError ? (
           <EmptyState
             title="Failed to load products"
-            description="The product catalog could not be reached. Check the API connection and try again."
+            description="The product catalogue could not be reached. Check the API connection and try again."
             icon="⚠️"
             action={{ label: "Back Home", href: "/" }}
           />
         ) : (
           <ProductsClient initialProducts={products} categories={categories} />
         )}
+
+        <div className="mt-12 grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+          <FAQSection
+            title="Industrial equipment catalogue FAQs"
+            description="These answers improve rich-result eligibility and clarify business coverage for both search engines and buyers."
+            faqs={catalogueFaqs}
+          />
+
+          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-8">
+            <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
+              Related SEO Paths
+            </p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+              Strengthen your product research journey
+            </h2>
+            <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">
+              Continue to <Link href="/products/category/refrigeration" className="font-semibold text-orange-500 hover:text-orange-600">industrial refrigeration Kenya</Link>, compare <Link href="/products/category/hvac" className="font-semibold text-orange-500 hover:text-orange-600">HVAC systems Kenya</Link>, or contact Finstar Industrial Systems Ltd for project advice and pricing.
+            </p>
+            <div className="mt-5 space-y-3 text-sm">
+              <Link href="/about" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
+                About our industrial engineering expertise
+              </Link>
+              <Link href="/contact" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
+                Contact the Nairobi sales team
+              </Link>
+              <Link href="/products/category/fittings" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
+                Browse industrial fittings Kenya
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

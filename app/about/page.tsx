@@ -1,45 +1,62 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Breadcrumbs from "@/components/Breadcrumbs";
+import FAQSection from "@/components/FAQSection";
+import { BreadcrumbJsonLd, FAQJsonLd, ServicesJsonLd } from "@/components/JsonLd";
 import SectionWrapper, { SectionHeader } from "@/components/SectionWrapper";
 import { services } from "@/lib/data";
+import { buildPageMetadata, type BreadcrumbItem } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "About Us – Industrial Equipment Supplier Since 2005",
+export const metadata: Metadata = buildPageMetadata({
+  title: "About Finstar Industrial Systems Ltd",
   description:
-    "Learn about Finstar Industrial Systems – East Africa's leading industrial refrigeration, HVAC, boiler, and cold room company since 2005. 500+ clients, 1,200+ projects, 150+ engineers.",
-  alternates: { canonical: "/about" },
-  openGraph: {
-    title: "About Finstar Industrial Systems | Kenya's #1 Industrial Equipment Company",
-    description:
-      "Founded in 2005, Finstar Industrial Systems has delivered 1,200+ refrigeration, HVAC, boiler, and cold room projects across East Africa. Meet our expert team.",
-    url: "https://finstarindustrials.com/about",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Finstar Industrial Systems Team" }],
+    "Learn about Finstar Industrial Systems Ltd, a Nairobi-based supplier of industrial refrigeration, HVAC, boiler, cold room, and engineering products serving Kenya and East Africa.",
+  path: "/about",
+  keywords: [
+    "industrial engineering company Kenya",
+    "refrigeration contractors Nairobi",
+    "HVAC contractors Kenya",
+    "industrial equipment supplier Nairobi",
+  ],
+});
+
+const aboutFaqs = [
+  {
+    question: "What does Finstar Industrial Systems Ltd specialize in?",
+    answer:
+      "Finstar Industrial Systems Ltd specializes in industrial refrigeration equipment, HVAC systems, cold room solutions, industrial boilers, and related engineering products for projects across Kenya and East Africa.",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "About Finstar Industrial Systems",
-    description: "Kenya's leading industrial equipment supplier since 2005. 500+ clients, 1,200+ projects.",
-    images: ["/og-image.png"],
+  {
+    question: "Where does Finstar Industrial Systems Ltd operate?",
+    answer:
+      "The business is based in Nairobi, Kenya and supports supply and engineering requirements across Kenya, Uganda, Tanzania, Rwanda, DRC Congo, Burundi, and nearby regional markets.",
   },
-};
+  {
+    question: "Why is Finstar relevant for industrial procurement in East Africa?",
+    answer:
+      "Finstar combines local market knowledge, category-specific product coverage, and direct quotation paths that help industrial buyers compare equipment and source support more efficiently.",
+  },
+];
 
 
 export default function AboutPage() {
+  const breadcrumbs: BreadcrumbItem[] = [
+    { name: "Home", href: "/" },
+    { name: "About Us", href: "/about" },
+  ];
+
   return (
     <div>
+      <BreadcrumbJsonLd items={breadcrumbs} />
+      <ServicesJsonLd services={services.map((service) => ({ title: service.title, description: service.description }))} />
+      <FAQJsonLd faqs={aboutFaqs} />
       {/* Header */}
       <div className="bg-gradient-to-br from-blue-900 to-blue-950 py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          <nav className="flex items-center gap-2 text-blue-300 text-sm mb-4" aria-label="Breadcrumb">
-            <Link href="/" className="hover:text-white transition-colors">Home</Link>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-            <span className="text-white font-medium">About Us</span>
-          </nav>
+          <Breadcrumbs items={breadcrumbs} light />
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white mb-3">About Us</h1>
           <p className="text-blue-200 text-lg max-w-2xl">
-            Years of industrial excellence, passion, and a commitment to quality solutions.
+            Years of industrial refrigeration, HVAC, cold room, and boiler supply expertise rooted in Nairobi and serving East Africa.
           </p>
         </div>
       </div>
@@ -199,6 +216,14 @@ export default function AboutPage() {
           </Link>
         </div>
       </section>
+
+      <SectionWrapper className="py-12 lg:py-16">
+        <FAQSection
+          title="About Finstar Industrial Systems Ltd"
+          description="These entity-focused FAQs help search engines and AI assistants understand the company, service footprint, and industrial specialization."
+          faqs={aboutFaqs}
+        />
+      </SectionWrapper>
     </div>
   );
 }
