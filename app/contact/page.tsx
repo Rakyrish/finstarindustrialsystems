@@ -49,37 +49,37 @@ export default function ContactPage() {
         <section className="mb-10 grid gap-8 lg:grid-cols-[1.35fr_0.65fr]">
           <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-8">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
-              Local SEO Signals
+              Get in Touch
             </p>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
               Nairobi-based industrial supply support for Kenya and East Africa
             </h2>
             <div className="mt-4 space-y-4 text-sm leading-8 text-slate-600 dark:text-slate-300">
               <p>
-                Use this contact page when you need industrial refrigeration Kenya quotations, cold room installation Kenya support, HVAC systems Kenya sourcing, industrial boiler product guidance, or industrial engineering procurement assistance in Nairobi.
+                Whether you need a quotation for industrial refrigeration equipment, cold room installation support, HVAC system sourcing, boiler products, or general engineering procurement — our Nairobi team is ready to help.
               </p>
               <p>
-                The page is structured for local search, Google rich results, and AI search engines with clear location data, business contact details, and service coverage across Kenya, Uganda, Tanzania, Rwanda, DRC Congo, and Burundi.
+                We supply and support businesses across Kenya, Uganda, Tanzania, Rwanda, DRC Congo, and Burundi. Send us a message, call us directly, or visit our offices in Industrial Area, Nairobi.
               </p>
             </div>
           </article>
 
           <aside className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-8">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
-              Fast Internal Paths
+              Quick Links
             </p>
             <div className="space-y-3 text-sm">
               <Link href="/products/category/refrigeration" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
-                Industrial Refrigeration Kenya
+                Industrial Refrigeration
               </Link>
               <Link href="/products/category/hvac" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
-                HVAC Systems Kenya
+                HVAC Systems
               </Link>
               <Link href="/products/category/cold-rooms" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
-                Cold Room Products Kenya
+                Cold Room Solutions
               </Link>
               <Link href="/products/category/boilers" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
-                Industrial Boilers Kenya
+                Industrial Boilers
               </Link>
             </div>
           </aside>
@@ -214,8 +214,8 @@ export default function ContactPage() {
 
         <section className="mt-12">
           <FAQSection
-            title="Contact and service coverage FAQs"
-            description="These answers help buyers and search engines understand where Finstar operates, what the business supplies, and how quotations are handled."
+            title="Frequently Asked Questions"
+            description="Common questions about how to reach us, where we operate, and how to get a quote for your project."
             faqs={contactFaqs}
           />
         </section>

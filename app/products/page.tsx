@@ -137,24 +137,24 @@ export default async function ProductsPage() {
         <section className="mb-10 grid gap-8 lg:grid-cols-[1.65fr_0.85fr]">
           <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-8">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
-              Catalogue Overview
+              Our Catalogue
             </p>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Product discovery built for engineers, contractors, and procurement teams
+              Explore our range of industrial refrigeration, HVAC, boiler, and cooling solutions trusted by businesses across East Africa
             </h2>
             <div className="mt-4 space-y-4 text-sm leading-8 text-slate-600 dark:text-slate-300">
               <p>
-                This catalogue is designed to help buyers researching industrial refrigeration Kenya, HVAC systems Kenya, industrial boilers Kenya, cold room installation Kenya, and industrial fittings Kenya. Dedicated product pages, crawlable category routes, and machine-readable schema make the site easier for Google, Bing, AI Overviews, ChatGPT search, Perplexity, and Gemini to interpret.
+                Browse our full range of industrial equipment — from refrigeration compressors and cold room panels to HVAC units, steam boilers, and engineering fittings. Every product is sourced from leading global manufacturers and available for supply, installation, and commissioning across Kenya and East Africa.
               </p>
               <p>
-                Use the filters below for quick browsing, then visit the linked category landing pages for focused content around industrial cooling systems Nairobi, refrigeration equipment suppliers Kenya, cold storage solutions East Africa, and related industrial engineering search intent.
+                Use the filters below to narrow by category, or browse our dedicated product ranges to find the right equipment for your project. Our Nairobi team is ready to assist with specifications, delivery timelines, and competitive quotations.
               </p>
             </div>
           </article>
 
           <aside className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
-              High-Intent Category Links
+              Browse by Category
             </p>
             <div className="space-y-3">
               <Link href="/products/category/refrigeration" className="block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-orange-300 hover:text-orange-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
@@ -189,30 +189,30 @@ export default async function ProductsPage() {
 
         <div className="mt-12 grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
           <FAQSection
-            title="Industrial equipment catalogue FAQs"
-            description="These answers improve rich-result eligibility and clarify business coverage for both search engines and buyers."
+            title="Frequently Asked Questions"
+            description="Common questions from engineers, contractors, and procurement teams sourcing industrial equipment in East Africa."
             faqs={catalogueFaqs}
           />
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-8">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
-              Related SEO Paths
+              Continue Exploring
             </p>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-              Strengthen your product research journey
+              Find the right equipment for your project
             </h2>
             <p className="mt-3 text-sm leading-7 text-slate-500 dark:text-slate-400">
-              Continue to <Link href="/products/category/refrigeration" className="font-semibold text-orange-500 hover:text-orange-600">industrial refrigeration Kenya</Link>, compare <Link href="/products/category/hvac" className="font-semibold text-orange-500 hover:text-orange-600">HVAC systems Kenya</Link>, or contact Finstar Industrial Systems Ltd for project advice and pricing.
+              Explore our <Link href="/products/category/refrigeration" className="font-semibold text-orange-500 hover:text-orange-600">industrial refrigeration range</Link>, compare <Link href="/products/category/hvac" className="font-semibold text-orange-500 hover:text-orange-600">HVAC systems</Link>, or speak to our Nairobi team for project-specific advice and competitive pricing.
             </p>
             <div className="mt-5 space-y-3 text-sm">
               <Link href="/about" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
-                About our industrial engineering expertise
+                About Finstar Industrial Systems
               </Link>
               <Link href="/contact" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
-                Contact the Nairobi sales team
+                Contact our Nairobi sales team
               </Link>
               <Link href="/products/category/fittings" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
-                Browse industrial fittings Kenya
+                Browse industrial fittings
               </Link>
             </div>
           </div>

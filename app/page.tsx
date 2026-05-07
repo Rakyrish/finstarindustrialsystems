@@ -220,6 +220,7 @@ export default async function HomePage() {
 
         {featuredProducts.length > 0 ? (
           <FeaturedProducts
+            desktopRowLimit={8}
             featuredProducts={featuredProducts}
             categories={categories}
           />
@@ -290,40 +291,40 @@ export default async function HomePage() {
         <div className="grid gap-8 lg:grid-cols-[1.4fr_0.6fr]">
           <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-8">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
-              Industrial SEO Authority
+              Why Finstar
             </p>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Trusted industrial systems expertise for Nairobi, Kenya, and East Africa
+              Your specialist partner for industrial systems across East Africa
             </h2>
             <div className="mt-4 space-y-4 text-sm leading-8 text-slate-600 dark:text-slate-300">
               <p>
-                Finstar Industrial Systems Ltd helps businesses sourcing industrial refrigeration Kenya, HVAC systems Kenya, cold room installation Kenya, industrial boilers Kenya, and industrial fittings Kenya. The site is structured around product entities, service intent, local business signals, and category landing pages so search engines and AI assistants can clearly interpret what the business supplies and where it operates.
+                Finstar Industrial Systems Ltd is Nairobi&apos;s trusted source for industrial refrigeration equipment, HVAC systems, cold room solutions, industrial boilers, and engineering fittings. We work directly with procurement teams, contractors, facility managers, and engineers to source the right equipment for every project.
               </p>
               <p>
-                From industrial cooling systems Nairobi to cold storage solutions East Africa, Finstar supports procurement teams, contractors, engineers, and facility operators with equipment discovery, specification review, and quotation paths that align with commercial buying behavior across Kenya, Uganda, Tanzania, Rwanda, DRC Congo, and Burundi.
+                From precision cooling systems and high-efficiency HVAC installations to steam boilers and custom cold storage builds, we support projects across Kenya, Uganda, Tanzania, Rwanda, DRC Congo, and Burundi — delivering world-class equipment backed by local expertise and after-sales support.
               </p>
             </div>
           </article>
 
           <aside className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-8">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
-              Topical Links
+              Explore Our Range
             </p>
             <div className="space-y-3 text-sm">
               <Link href="/products/category/refrigeration" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
-                Industrial Refrigeration Kenya
+                Industrial Refrigeration
               </Link>
               <Link href="/products/category/hvac" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
-                HVAC Systems Kenya
+                HVAC Systems
               </Link>
               <Link href="/products/category/boilers" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
-                Industrial Boilers Kenya
+                Industrial Boilers
               </Link>
               <Link href="/products/category/cold-rooms" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
-                Cold Room Products Kenya
+                Cold Room Solutions
               </Link>
               <Link href="/contact" className="block font-semibold text-blue-700 hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200">
-                Request a quote from Nairobi
+                Request a Quote
               </Link>
             </div>
           </aside>
@@ -332,8 +333,8 @@ export default async function HomePage() {
 
       <SectionWrapper className="py-12 lg:py-16">
         <FAQSection
-          title="Industrial systems FAQs for Kenya and East Africa"
-          description="Conversational answers that improve local SEO, AI-search visibility, and buyer clarity for industrial procurement terms."
+          title="Frequently Asked Questions"
+          description="Common questions from engineers, procurement teams, and facility managers across East Africa."
           faqs={homepageFaqs}
         />
       </SectionWrapper>

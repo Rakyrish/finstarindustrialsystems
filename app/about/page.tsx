@@ -220,7 +220,7 @@ export default function AboutPage() {
       <SectionWrapper className="py-12 lg:py-16">
         <FAQSection
           title="About Finstar Industrial Systems Ltd"
-          description="These entity-focused FAQs help search engines and AI assistants understand the company, service footprint, and industrial specialization."
+          description="Common questions about who we are, where we operate, and the industrial sectors we serve across Kenya and East Africa."
           faqs={aboutFaqs}
         />
       </SectionWrapper>

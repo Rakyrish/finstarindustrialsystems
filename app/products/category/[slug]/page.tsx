@@ -83,7 +83,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           <Breadcrumbs items={breadcrumbs} light />
           <div className="mt-6 max-w-4xl">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-400">
-              Category Landing Page
+              {category.name}
             </p>
             <h1 className="text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl">
               {seo.headline}
@@ -113,7 +113,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
               Explore More Industrial Categories
             </h2>
             <p className="mt-2 text-sm leading-7 text-slate-500 dark:text-slate-400">
-              Use these internal links to compare product types and discover related industrial supply options in Kenya.
+              Browse our full range of industrial equipment categories and find the right solution for your project.
             </p>
             <div className="mt-5 space-y-2">
               <Link href="/products/category/refrigeration" className="block rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 transition hover:border-orange-300 hover:text-orange-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200">
@@ -176,14 +176,14 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
         <section className="mt-12 grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
           <FAQSection
-            title={`${category.name} FAQs for Kenya and East Africa`}
-            description="These FAQ entries are written for Google, Bing, AI Overviews, ChatGPT search, Gemini, and Perplexity while still helping procurement teams get answers quickly."
+            title={`${category.name} — Common Questions`}
+            description="Common questions from buyers, engineers, and procurement teams about this product category."
             faqs={seo.faqs}
           />
 
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:p-8">
             <p className="mb-3 text-sm font-semibold uppercase tracking-[0.18em] text-orange-500">
-              Procurement Paths
+              Explore Further
             </p>
             <h2 className="text-xl font-bold text-slate-900 dark:text-white">
               Keep exploring the catalogue
@@ -207,8 +207,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
         <section className="mt-12">
           <FAQSection
-            title="General catalogue and supply FAQs"
-            description="Additional questions that strengthen topical authority around industrial equipment supply in Kenya and East Africa."
+            title="More About Industrial Equipment Supply"
+            description="Additional questions about sourcing, delivery, and product support across Kenya and East Africa."
             faqs={catalogueFaqs}
           />
         </section>

@@ -83,9 +83,9 @@ export default function Footer() {
                 { label: "Home", href: "/" },
                 { label: "About Us", href: "/about" },
                 { label: "All Products", href: "/products" },
-                { label: "Industrial Refrigeration Kenya", href: "/products/category/refrigeration" },
-                { label: "HVAC Systems Kenya", href: "/products/category/hvac" },
-                { label: "Cold Room Products Kenya", href: "/products/category/cold-rooms" },
+                { label: "Industrial Refrigeration", href: "/products/category/refrigeration" },
+                { label: "HVAC Systems", href: "/products/category/hvac" },
+                { label: "Cold Room Solutions", href: "/products/category/cold-rooms" },
                 { label: "Contact Us", href: "/contact" },
               ].map((link) => (
                 <li key={link.href}>
