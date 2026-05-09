@@ -141,11 +141,17 @@ export interface ApiStockMovement {
 
 interface ApiInquiryResponse {
   message: string;
+  email_sent?: boolean;
   data: {
     id: number;
     name: string;
     email: string;
+    phone?: string;
+    company?: string;
+    subject?: string;
     message: string;
+    products?: string[];
+    source_url?: string;
     created_at: string;
   };
 }
@@ -403,6 +409,7 @@ export async function submitInquiry(payload: InquiryPayload) {
   });
   return {
     message: response.message,
+    emailSent: response.email_sent ?? false,
     data: {
       id: response.data.id,
       name: response.data.name,
@@ -840,6 +847,9 @@ export async function generateProductWithAI({
 export interface ChatMessage {
   id: number;
   sender: "user" | "bot";
+  status?: string;
+  detected_intent?: string;
+  matched_product_name?: string;
   message: string;
   created_at: string;
 }
@@ -851,7 +861,7 @@ export interface ChatSessionSummary {
   updated_at: string;
   message_count: number;
   last_message_preview: string;
-  last_message_at: string;
+  last_message_at?: string | null;
 }
 
 export interface ChatSessionDetail {
@@ -868,9 +878,15 @@ export interface ChatInsights {
   total_messages: number;
   messages_today: number;
   active_sessions_24h: number;
+  quote_intent_count: number;
+  failed_responses_count: number;
+  rate_limited_count: number;
   recent_messages: {
     id: number;
     sender: string;
+    status?: string;
+    detected_intent?: string;
+    matched_product_name?: string;
     message: string;
     created_at: string;
     session_id: string;
@@ -879,12 +895,35 @@ export interface ChatInsights {
     message: string;
     count: number;
   }[];
+  common_intents: {
+    detected_intent: string;
+    count: number;
+  }[];
+  most_requested_products: {
+    matched_product_name: string;
+    count: number;
+  }[];
+  recent_failures: {
+    id: number;
+    status: string;
+    message: string;
+    created_at: string;
+    session_id: string;
+  }[];
+  usage_statistics: {
+    avg_messages_per_session: number;
+    quote_intent_sessions: number;
+    failed_response_rate: number;
+    rate_limited_rate: number;
+  };
 }
 
 export interface ChatbotResponse {
   reply: string;
   session_id: string;
   rate_limited?: boolean;
+  rate_limited_reason?: string;
+  retry_after_seconds?: number | null;
 }
 
 /**

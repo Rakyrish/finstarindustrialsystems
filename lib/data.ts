@@ -1,177 +1,149 @@
 import { CategoryLink, Service } from "@/types";
 
+// ── Category directory: single source of truth for all frontend category metadata ──
+// Slugs must be URL-safe (lowercase, hyphens only, no spaces or parens).
+// The category page falls back to this data when a slug isn't yet in the backend DB.
 export const categoryDirectory: Record<
   string,
   Pick<CategoryLink, "name" | "description" | "icon">
 > = {
+  // ── Refrigeration & Cooling ──────────────────────────────────────────────────
   refrigeration: {
     name: "Industrial Refrigeration",
-    description:
-      "Industrial refrigeration systems, cold storage components, and commercial cooling equipment for food, pharma, hospitality, and manufacturing in Kenya.",
+    description: "Industrial refrigeration systems, cold storage components, and commercial cooling equipment.",
     icon: "❄️",
   },
-
   hvac: {
     name: "HVAC Systems",
-    description:
-      "HVAC systems, air conditioning equipment, ventilation solutions, and climate control products for industrial and commercial projects in Kenya.",
+    description: "HVAC systems, air conditioning equipment, ventilation solutions, and climate control products.",
     icon: "🌬️",
   },
-
-  boilers: {
-    name: "Industrial Boilers",
-    description:
-      "Industrial boiler systems, burners, steam accessories, and process heating equipment for plants, institutions, and factories in East Africa.",
-    icon: "🔥",
-  },
-
   "cold-rooms": {
     name: "Cold Rooms",
-    description:
-      "Cold room equipment, cold storage products, insulation panels, and refrigeration accessories for temperature-controlled projects in Kenya.",
+    description: "Cold room equipment, cold storage products, insulation panels, and refrigeration accessories.",
     icon: "🧊",
   },
-
-  fittings: {
-    name: "Industrial Fittings",
-    description:
-      "Industrial fittings, accessories, and support components for refrigeration, HVAC, steam, and plant maintenance systems in Kenya.",
-    icon: "🔧",
-  },
-
-  "refrigeration-air-conditioning-hvac": {
-    name: "Refrigeration ",
-    description:
-      "Industrial-grade refrigeration units, split systems, VRF, and complete HVAC solutions for commercial and large-scale applications.",
-    icon: "❄️",
-  },
-
-  "boilers-steam-systems": {
-    name: "Boilers & Steam Systems",
-    description:
-      "High-efficiency industrial boilers, steam generators, and steam distribution systems for process heating.",
-    icon: "🔥",
-  },
-
-  "pumps-fluids": {
-    name: "Pumps & Fluids",
-    description:
-      "Centrifugal, submersible, and industrial pumps for water, chemicals, and fluid handling applications.",
-    icon: "💧",
-  },
-
-  "valves-flow-control": {
-    name: "Valves & Flow Control",
-    description:
-      "Ball valves, gate valves, check valves, and flow control equipment for industrial pipework systems.",
-    icon: "🔩",
-  },
-
-  "pipe-fittings-metals": {
-    name: "Pipe Fittings & Metals",
-    description:
-      "Copper, steel, and PVC pipe fittings, flanges, elbows, and metal fabrication components.",
-    icon: "🪛",
-  },
-
-  "industrial-equipment-supplies": {
-    name: "Industrial Equipment & Supplies",
-    description:
-      "General-purpose industrial machinery, tools, and consumable supplies for manufacturing and operations.",
-    icon: "🏭",
-  },
-
-  "construction-installation-materials": {
-    name: "Construction & Installation Materials",
-    description:
-      "Structural materials, insulation panels, fasteners, and installation hardware for industrial construction.",
-    icon: "🏗️",
-  },
-
-  "plumbing-fabrication": {
-    name: "Plumbing & Fabrication",
-    description:
-      "Plumbing systems, custom fabrication, and pipework solutions for commercial and industrial buildings.",
-    icon: "🔧",
-  },
-
-  "laboratory-specialized-equipment": {
-    name: "Laboratory & Specialized Equipment",
-    description:
-      "Precision laboratory instruments, calibration tools, and specialized equipment for technical environments.",
-    icon: "🔬",
-  },
-
-  "stainless-steel-products": {
-    name: "Stainless Steel Products",
-    description:
-      "Food-grade and industrial stainless steel tanks, vessels, fittings, and custom fabrications.",
-    icon: "⚙️",
-  },
-
   "mechanical-ventilation": {
     name: "Mechanical Ventilation",
-    description:
-      "Industrial-grade ventilation systems for commercial and large-scale applications.",
-    icon: "🌬️",
+    description: "Industrial-grade ventilation systems for commercial and large-scale applications.",
+    icon: "💨",
   },
 
-  "brass-fittings": {
-    name: "Brass Fittings",
-    description:
-      "High-quality brass fittings for plumbing and industrial applications.",
-    icon: "🔩",
+  // ── Boilers & Heating ────────────────────────────────────────────────────────
+  "boilers-steam-systems": {
+    name: "Boilers & Steam Systems",
+    description: "High-efficiency industrial boilers, steam generators, and steam distribution systems.",
+    icon: "🔥",
   },
-
+  "industrial-burners-accessories": {
+    name: "Industrial Burners & Accessories",
+    description: "Industrial-grade burners and accessories for various industrial applications.",
+    icon: "🔥",
+  },
   "insulation-materials": {
     name: "Insulation Materials",
-    description:
-      "Industrial-grade insulation materials for thermal and acoustic insulation.",
+    description: "Industrial-grade insulation materials for thermal and acoustic insulation.",
     icon: "🛡️",
   },
 
-  "refrigeration-oils": {
-    name: "Refrigeration Oils",
-    description:
-      "High-performance refrigeration oils for industrial refrigeration systems.",
+  // ── Pipes, Fittings & Flow ───────────────────────────────────────────────────
+  "plumbing-fabrication": {
+    name: "Plumbing & Fabrication",
+    description: "Plumbing systems, custom fabrication, and pipework solutions for commercial and industrial buildings.",
+    icon: "🔧",
+  },
+  "pipe-fittings-metals": {
+    name: "Pipe Fittings & Metals",
+    description: "Copper, steel, and PVC pipe fittings, flanges, elbows, and metal fabrication components.",
+    icon: "🪛",
+  },
+  "valves-flow-control": {
+    name: "Valves & Flow Control",
+    description: "Ball valves, gate valves, check valves, and flow control equipment for industrial pipework systems.",
+    icon: "🔩",
+  },
+  "pumps-fluids": {
+    name: "Pumps & Fluids",
+    description: "Centrifugal, submersible, and industrial pumps for water, chemicals, and fluid handling.",
     icon: "💧",
   },
-
-  "industrial-burners-accessories": {
-    name: "Industrial Burners & Accessories",
-    description:
-      "Industrial-grade burners and accessories for various industrial applications.",
-    icon: "🔥",
+  "brass-fittings": {
+    name: "Brass Fittings",
+    description: "High-quality brass fittings for plumbing and industrial applications.",
+    icon: "🔩",
   },
 
-  "castor-wheels": {
-    name: "Castor Wheels",
-    description:
-      "Heavy-duty castor wheels for industrial mobility and equipment handling.",
+  // ── Materials & Specialist Equipment ────────────────────────────────────────
+  "stainless-steel-products": {
+    name: "Stainless Steel Products",
+    description: "Food-grade and industrial stainless steel tanks, vessels, fittings, and custom fabrications.",
     icon: "⚙️",
   },
+  "refrigeration-oils": {
+    name: "Refrigeration Oils",
+    description: "High-performance refrigeration oils for industrial refrigeration systems.",
+    icon: "💧",
+  },
+  "industrial-equipment-supplies": {
+    name: "Industrial Equipment & Supplies",
+    description: "General-purpose industrial machinery, tools, and consumable supplies.",
+    icon: "🏭",
+  },
+  "laboratory-specialized-equipment": {
+    name: "Laboratory & Specialized Equipment",
+    description: "Precision laboratory instruments, calibration tools, and specialized equipment.",
+    icon: "🔬",
+  },
+  "castor-wheels": {
+    name: "Castor Wheels",
+    description: "Heavy-duty castor wheels for industrial mobility and equipment handling.",
+    icon: "⚙️",
+  },
+  "construction-installation-materials": {
+    name: "Construction & Installation Materials",
+    description: "Structural materials, insulation panels, fasteners, and installation hardware.",
+    icon: "🏗️",
+  },
+  fittings: {
+    name: "Industrial Fittings",
+    description: "Industrial fittings, accessories, and support components for refrigeration, HVAC, and plant systems.",
+    icon: "🔧",
+  },
 
+  // ── Services ─────────────────────────────────────────────────────────────────
   services: {
     name: "Services",
-    description:
-      "Installation, commissioning, preventive maintenance, and emergency breakdown support services.",
+    description: "Installation, commissioning, preventive maintenance, and emergency breakdown support.",
     icon: "🛠️",
   },
-  "Air Conditioning (HVAC)": {
-    name: "Air Conditioning (HVAC)",
-    description:
-      "Supply, installation, and servicing of split units, ducted systems, VRF, and industrial HVAC solutions.",
-    icon: "❄️",
-  },
 
+  // ── Miscellaneous ─────────────────────────────────────────────────────────────
   miscellaneous: {
     name: "Miscellaneous",
-    description:
-      "Other industrial products and equipment not covered by standard categories.",
+    description: "Other industrial products and equipment not covered by standard categories.",
     icon: "📦",
   },
-
 };
+
+// ── Mega-menu groups: used by the desktop navbar mega menu ───────────────────
+export const megaMenuGroups = [
+  {
+    title: "Refrigeration & Cooling",
+    slugs: ["refrigeration", "hvac", "cold-rooms", "mechanical-ventilation"],
+  },
+  {
+    title: "Boilers & Heating",
+    slugs: ["boilers-steam-systems", "industrial-burners-accessories", "insulation-materials"],
+  },
+  {
+    title: "Pipes, Fittings & Flow",
+    slugs: ["plumbing-fabrication", "pipe-fittings-metals", "valves-flow-control", "pumps-fluids"],
+  },
+  {
+    title: "Materials & Equipment",
+    slugs: ["stainless-steel-products", "refrigeration-oils", "industrial-equipment-supplies", "services"],
+  },
+] as const;
 
 export const navigationCategories: CategoryLink[] = Object.entries(
   categoryDirectory,
@@ -233,5 +205,5 @@ export const services: Service[] = [
     description:
       "Scheduled preventive maintenance contracts to keep your systems at peak efficiency and minimise downtime.",
     icon: "🔧",
-  }
+  },
 ];

@@ -52,6 +52,11 @@ class ChatMessage(models.Model):
         USER = "user", "User"
         BOT = "bot", "Bot"
 
+    class Status(models.TextChoices):
+        NORMAL = "normal", "Normal"
+        FALLBACK = "fallback", "Fallback"
+        RATE_LIMITED = "rate_limited", "Rate limited"
+
     session = models.ForeignKey(
         ChatSession,
         on_delete=models.CASCADE,
@@ -60,6 +65,24 @@ class ChatMessage(models.Model):
     sender = models.CharField(
         max_length=4,
         choices=Sender.choices,
+        db_index=True,
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.NORMAL,
+        db_index=True,
+    )
+    detected_intent = models.CharField(
+        max_length=40,
+        blank=True,
+        default="",
+        db_index=True,
+    )
+    matched_product_name = models.CharField(
+        max_length=300,
+        blank=True,
+        default="",
         db_index=True,
     )
     message = models.TextField()

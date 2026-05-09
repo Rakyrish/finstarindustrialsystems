@@ -65,14 +65,30 @@ interface ChatMsg {
 }
 
 type PanelView = "menu" | "chat";
+type QuickAction =
+  | { label: string; kind: "message"; value: string }
+  | { label: string; kind: "link"; value: string };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL + "api";
-
 const PHONE = "254726559606";
 const EMAIL = "info@finstarindustrial.com";
 const WA_MESSAGE = encodeURIComponent("Hello, I'd like to learn more about your industrial equipment.");
-
-// ── Component ────────────────────────────────────────────────────────────────
+const QUICK_ACTIONS: QuickAction[] = [
+  {
+    label: "Request Quote",
+    kind: "message",
+    value: "I need a quotation for an industrial project. Please guide me on the details you need.",
+  },
+  {
+    label: "Contact Sales",
+    kind: "link",
+    value: `https://wa.me/${PHONE}?text=${encodeURIComponent("Hello, I would like to speak with the Finstar sales team.")}`,
+  },
+  { label: "View Products", kind: "link", value: "/products" },
+  { label: "HVAC Systems", kind: "link", value: "/products/category/hvac" },
+  { label: "Refrigeration", kind: "link", value: "/products/category/refrigeration" },
+  { label: "Cold Rooms", kind: "link", value: "/products/category/cold-rooms" },
+];
 
 export default function SupportWidget() {
   const [open, setOpen] = useState(false);
@@ -81,116 +97,54 @@ export default function SupportWidget() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [rateLimited, setRateLimited] = useState(false);
+  const [sessionLocked, setSessionLocked] = useState(false);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const isRateLimited = sessionLocked || cooldownRemaining > 0;
 
-  // Restore session from localStorage
   useEffect(() => {
     const saved = localStorage.getItem("finstar_chat_session");
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        if (data.sessionId) setSessionId(data.sessionId);
-        if (data.messages) setMessages(data.messages);
-      } catch { /* ignore */ }
+    if (!saved) return;
+
+    try {
+      const data = JSON.parse(saved);
+      if (data.sessionId) setSessionId(data.sessionId);
+      if (data.messages) setMessages(data.messages);
+    } catch {
+      localStorage.removeItem("finstar_chat_session");
     }
   }, []);
 
-  // Persist session
   useEffect(() => {
     if (sessionId || messages.length > 0) {
       localStorage.setItem("finstar_chat_session", JSON.stringify({ sessionId, messages }));
     }
   }, [sessionId, messages]);
 
-  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, sending]);
 
-  // Focus input when chat opens
   useEffect(() => {
     if (view === "chat" && open) {
-      setTimeout(() => inputRef.current?.focus(), 300);
+      setTimeout(() => inputRef.current?.focus(), 250);
     }
   }, [view, open]);
 
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
-    if (!text || sending || rateLimited) return;
+  useEffect(() => {
+    if (cooldownRemaining <= 0) return;
 
-    const userMsg: ChatMsg = {
-      id: Date.now(),
-      sender: "user",
-      message: text,
-      created_at: new Date().toISOString(),
-    };
+    const timer = window.setTimeout(() => {
+      setCooldownRemaining(prev => Math.max(prev - 1, 0));
+    }, 1000);
 
-    setMessages(prev => [...prev, userMsg]);
-    setInput("");
-    setSending(true);
-
-    try {
-      const res = await fetch(`${API_BASE}/chatbot`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: text,
-          session_id: sessionId,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (data.session_id) setSessionId(data.session_id);
-      if (data.rate_limited) setRateLimited(true);
-
-      const botMsg: ChatMsg = {
-        id: Date.now() + 1,
-        sender: "bot",
-        message: data.reply || "Sorry, something went wrong. Please try again.",
-        created_at: new Date().toISOString(),
-      };
-
-      setMessages(prev => [...prev, botMsg]);
-    } catch {
-      const errorMsg: ChatMsg = {
-        id: Date.now() + 1,
-        sender: "bot",
-        message: "Connection error. Please try again or contact us directly at +254 726 559 606.",
-        created_at: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, errorMsg]);
-    } finally {
-      setSending(false);
-    }
-  }, [input, sending, sessionId, rateLimited]);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  const startNewChat = () => {
-    setMessages([]);
-    setSessionId(null);
-    setRateLimited(false);
-    localStorage.removeItem("finstar_chat_session");
-  };
-
-  const toggleOpen = () => {
-    setOpen(prev => !prev);
-    if (!open) setView("menu");
-  };
-
-  const panelRef = useRef<HTMLDivElement>(null);
+    return () => window.clearTimeout(timer);
+  }, [cooldownRemaining]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      // Don't close if clicking the fab button (it has its own toggle logic)
       const target = event.target as Node;
       if (
         open &&
@@ -205,14 +159,98 @@ export default function SupportWidget() {
     if (open) {
       document.addEventListener("mousedown", handleClickOutside);
     }
+
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  const sendMessage = useCallback(async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
+    if (!text || sending || isRateLimited) return;
+
+    const userMsg: ChatMsg = {
+      id: Date.now(),
+      sender: "user",
+      message: text,
+      created_at: new Date().toISOString(),
+    };
+
+    setView("chat");
+    setMessages(prev => [...prev, userMsg]);
+    setInput("");
+    setSending(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/chatbot`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          session_id: sessionId,
+        }),
+      });
+      const data = await res.json();
+
+      if (data.session_id) setSessionId(data.session_id);
+      if (data.rate_limited_reason === "session_limit") {
+        setSessionLocked(true);
+      } else if (data.retry_after_seconds) {
+        setCooldownRemaining(data.retry_after_seconds);
+      }
+
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          sender: "bot",
+          message: data.reply || "Sorry, something went wrong. Please try again.",
+          created_at: new Date().toISOString(),
+        },
+      ]);
+    } catch {
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          sender: "bot",
+          message: "Connection error. Please try again or contact Finstar directly at +254 726 559 606.",
+          created_at: new Date().toISOString(),
+        },
+      ]);
+    } finally {
+      setSending(false);
+    }
+  }, [input, sending, sessionId, isRateLimited]);
+
+  const handleQuickAction = (action: QuickAction) => {
+    if (action.kind === "message") {
+      void sendMessage(action.value);
+      return;
+    }
+    window.location.href = action.value;
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      void sendMessage();
+    }
+  };
+
+  const startNewChat = () => {
+    setMessages([]);
+    setSessionId(null);
+    setSessionLocked(false);
+    setCooldownRemaining(0);
+    localStorage.removeItem("finstar_chat_session");
+  };
+
+  const toggleOpen = () => {
+    setOpen(prev => !prev);
+    if (!open) setView("menu");
+  };
 
   return (
     <div className="support-widget" id="support-widget">
-      {/* Floating Action Button */}
       <button
         id="support-widget-fab"
         onClick={toggleOpen}
@@ -222,18 +260,16 @@ export default function SupportWidget() {
         {open ? <CloseIcon /> : <ChatIcon />}
       </button>
 
-      {/* Panel */}
       {open && (
         <div className="support-widget__panel" ref={panelRef}>
           {view === "menu" ? (
-            /* ── Contact Menu ─────────────────────────────────────── */
             <div className="support-widget__menu">
               <div className="support-widget__header">
                 <div className="support-widget__header-logo">
                   <span className="support-widget__logo-dot" />
                   <div>
-                    <h3 className="support-widget__header-title">Finstar Supports</h3>
-                    <p className="support-widget__header-sub">How can we help you today?</p>
+                    <h3 className="support-widget__header-title">Finstar Sales Desk</h3>
+                    <p className="support-widget__header-sub">Industrial equipment support for Kenya and East Africa</p>
                   </div>
                 </div>
                 <button onClick={toggleOpen} className="support-widget__close-btn" aria-label="Close widget">
@@ -254,7 +290,7 @@ export default function SupportWidget() {
                   </div>
                   <div className="support-widget__option-text">
                     <span className="support-widget__option-label">WhatsApp</span>
-                    <span className="support-widget__option-desc">Quick response • Usually instant</span>
+                    <span className="support-widget__option-desc">Quick response for pricing, quotations, and follow-up</span>
                   </div>
                   <span className="support-widget__option-badge">Recommended</span>
                 </a>
@@ -271,7 +307,7 @@ export default function SupportWidget() {
                     <span className="support-widget__option-label">Call Us</span>
                     <span className="support-widget__option-desc">+254 726 559 606</span>
                   </div>
-                  <span className="support-widget__option-badge">Recommended</span>
+                  <span className="support-widget__option-badge">Direct</span>
                 </a>
 
                 <a
@@ -298,13 +334,28 @@ export default function SupportWidget() {
                   </div>
                   <div className="support-widget__option-text">
                     <span className="support-widget__option-label">AI Assistant</span>
-                    <span className="support-widget__option-desc">Chat with our AI • 24/7</span>
+                    <span className="support-widget__option-desc">Product guidance, quotation prep, and category discovery</span>
                   </div>
                 </button>
               </div>
+
+              {/* <div className="support-widget__quick-actions">
+                <p className="support-widget__quick-actions-title">Quick actions</p>
+                <div className="support-widget__quick-actions-grid">
+                  {QUICK_ACTIONS.map(action => (
+                    <button
+                      key={action.label}
+                      type="button"
+                      onClick={() => handleQuickAction(action)}
+                      className="support-widget__quick-action"
+                    >
+                      {action.label}
+                    </button>
+                  ))}
+                </div>
+              </div> */}
             </div>
           ) : (
-            /* ── Chat View ────────────────────────────────────────── */
             <div className="support-widget__chat">
               <div className="support-widget__chat-header">
                 <button onClick={() => setView("menu")} className="support-widget__back-btn" aria-label="Back to menu">
@@ -314,7 +365,7 @@ export default function SupportWidget() {
                   <h3 className="support-widget__chat-title">Finstar AI Assistant</h3>
                   <span className="support-widget__chat-status">
                     <span className="support-widget__status-dot" />
-                    Online
+                    Sales and product support
                   </span>
                 </div>
                 <div className="support-widget__chat-actions">
@@ -330,14 +381,26 @@ export default function SupportWidget() {
               <div className="support-widget__messages">
                 {messages.length === 0 && (
                   <div className="support-widget__welcome">
-                    <div className="support-widget__welcome-icon">🤖</div>
+                    <div className="support-widget__welcome-icon">FS</div>
                     <p className="support-widget__welcome-text">
-                      Hi! I&apos;m the Finstar AI Assistant. Ask me about our industrial equipment, refrigeration, HVAC, boilers, and more!
+                      Ask about refrigeration, HVAC systems, cold rooms, boiler systems, or industrial fittings. I can also help you prepare a quotation request for the Finstar sales team.
                     </p>
+                    <div className="support-widget__quick-actions-grid support-widget__quick-actions-grid--chat">
+                      {QUICK_ACTIONS.map(action => (
+                        <button
+                          key={action.label}
+                          type="button"
+                          onClick={() => handleQuickAction(action)}
+                          className="support-widget__quick-action"
+                        >
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                {messages.map((msg) => (
+                {messages.map(msg => (
                   <div
                     key={msg.id}
                     className={`support-widget__msg support-widget__msg--${msg.sender}`}
@@ -353,10 +416,13 @@ export default function SupportWidget() {
 
                 {sending && (
                   <div className="support-widget__msg support-widget__msg--bot">
-                    <div className="support-widget__bubble support-widget__bubble--bot support-widget__typing">
-                      <span className="support-widget__dot" />
-                      <span className="support-widget__dot" />
-                      <span className="support-widget__dot" />
+                    <div className="support-widget__bubble support-widget__bubble--bot support-widget__typing-wrap">
+                      <div className="support-widget__typing">
+                        <span className="support-widget__dot" />
+                        <span className="support-widget__dot" />
+                        <span className="support-widget__dot" />
+                      </div>
+                      {/* <span className="support-widget__typing-label">Reviewing products and preparing a reply...</span> */}
                     </div>
                   </div>
                 )}
@@ -369,16 +435,22 @@ export default function SupportWidget() {
                   ref={inputRef}
                   type="text"
                   value={input}
-                  onChange={e => setInput(e.target.value)}
+                  onChange={event => setInput(event.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={rateLimited ? "Message limit reached" : "Type your message..."}
-                  disabled={sending || rateLimited}
+                  placeholder={
+                    sessionLocked
+                      ? "This session has reached its limit"
+                      : cooldownRemaining > 0
+                        ? `Please wait ${cooldownRemaining}s before sending again`
+                        : "Ask about products, quotations, or your project requirements"
+                  }
+                  disabled={sending || isRateLimited}
                   className="support-widget__input"
                   id="support-widget-input"
                 />
                 <button
-                  onClick={sendMessage}
-                  disabled={!input.trim() || sending || rateLimited}
+                  onClick={() => void sendMessage()}
+                  disabled={!input.trim() || sending || isRateLimited}
                   className="support-widget__send-btn"
                   aria-label="Send message"
                   id="support-widget-send"

@@ -351,21 +351,22 @@ def generate_product_details(image_url: str) -> dict:
     client = OpenAI(api_key=api_key)
 
     try:
-        response = client.responses.create(
-            model="gpt-5.4-mini",
-            input=[
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
                 {
                     "role": "user",
                     "content": [
-                        {"type": "input_text", "text": PRODUCT_ANALYSIS_PROMPT},
-                        {"type": "input_image", "image_url": image_url},
+                        {"type": "text", "text": PRODUCT_ANALYSIS_PROMPT},
+                        {"type": "image_url", "image_url": {"url": image_url}},
                     ],
                 }
             ],
-            store=True,
+            max_tokens=2000,
+            temperature=0.4,
         )
     except Exception as exc:
-        logger.exception("OpenAI API call failed with model gpt-5.4-mini")
+        logger.exception("OpenAI API call failed with model gpt-4o-mini")
         if "insufficient_quota" in str(exc).lower():
             raise AIServiceError(
                 "OpenAI Quota exceeded. Please check your credit balance at "
@@ -374,24 +375,14 @@ def generate_product_details(image_url: str) -> dict:
         raise AIServiceError(f"AI service request failed: {exc}") from exc
 
    
-    raw_content = None
     try:
-        for output_item in response.output:
-            if not hasattr(output_item, "content"):
-                continue
-            for block in output_item.content:
-                if getattr(block, "type", None) == "output_text" and hasattr(block, "text"):
-                    raw_content = block.text.strip()
-                    break
-            if raw_content is not None:
-                break
+        raw_content = response.choices[0].message.content
+        if not raw_content:
+            raise AIServiceError("AI service returned an empty response.")
+        raw_content = raw_content.strip()
     except Exception as err:
-        logger.error("Unexpected response structure from Responses API: %s", response)
+        logger.error("Unexpected response structure from Chat Completions API: %s", response)
         raise AIServiceError("AI service returned an invalid data structure.") from err
-
-    if not raw_content:
-        logger.error("No output_text block found in Responses API response: %s", response)
-        raise AIServiceError("AI service returned an empty response.")
 
     # Strip markdown fences if the model includes them (e.g. ```json ... ```)
     if raw_content.startswith("```"):

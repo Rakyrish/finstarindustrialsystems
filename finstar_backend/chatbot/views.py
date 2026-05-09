@@ -13,7 +13,7 @@ Admin (JWT protected):
 import logging
 from datetime import timedelta
 
-from django.db.models import Count, Q
+from django.db.models import Count, Max, Q
 from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.pagination import PageNumberPagination
@@ -22,18 +22,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
-from .gemini_service import FALLBACK_RESPONSE, GeminiServiceError, get_ai_response
 from .models import ChatMessage, ChatSession
 from .serializers import (
     ChatbotInputSerializer,
     ChatSessionDetailSerializer,
     ChatSessionListSerializer,
 )
+from .services import QUOTE_INTENTS, generate_chatbot_reply, get_rate_limit_reply
 
 logger = logging.getLogger("chatbot")
-
-# Max messages per session (rate limit)
-MAX_MESSAGES_PER_SESSION = 25
 
 
 # ── Pagination ────────────────────────────────────────────────────────────────
@@ -79,51 +76,48 @@ class ChatbotView(APIView):
             # Extract user identifier from request
             user_identifier = self._get_user_identifier(request)
             session = ChatSession.objects.create(user_identifier=user_identifier)
+        else:
+            user_identifier = session.user_identifier or self._get_user_identifier(request)
+            if session.user_identifier != user_identifier:
+                session.user_identifier = user_identifier
+                session.save(update_fields=["user_identifier", "updated_at"])
 
-        # Rate limit check: max messages per session
-        user_message_count = session.messages.filter(sender="user").count()
-        if user_message_count >= MAX_MESSAGES_PER_SESSION:
+        rate_limit_reply = get_rate_limit_reply(session, user_identifier)
+        if rate_limit_reply:
+            ChatMessage.objects.create(
+                session=session,
+                sender=ChatMessage.Sender.BOT,
+                status=ChatMessage.Status.RATE_LIMITED,
+                message=rate_limit_reply.reply,
+            )
+            session.save(update_fields=["updated_at"])
             return Response(
                 {
-                    "reply": (
-                        "You've reached the message limit for this session. "
-                        "For further assistance, please contact us directly:\n\n"
-                        "📞 Call: +254 726 559 606\n"
-                        "💬 WhatsApp: +254 726 559 606\n"
-                        "📧 Email: info@finstarindustrial.com"
-                    ),
+                    "reply": rate_limit_reply.reply,
                     "session_id": str(session.id),
                     "rate_limited": True,
+                    "rate_limited_reason": rate_limit_reply.reason,
+                    "retry_after_seconds": rate_limit_reply.retry_after_seconds,
                 },
                 status=status.HTTP_200_OK,
             )
 
-        # Store user message
+        chatbot_reply = generate_chatbot_reply(session, user_message)
+
         ChatMessage.objects.create(
             session=session,
             sender=ChatMessage.Sender.USER,
+            detected_intent=chatbot_reply.detected_intent,
+            matched_product_name=chatbot_reply.matched_product_name,
             message=user_message,
         )
-
-        # Build conversation history for context
-        history = list(
-            session.messages.order_by("created_at").values("sender", "message")
-        )
-
-        # Get AI response
-        try:
-            ai_reply = get_ai_response(user_message, conversation_history=history)
-        except GeminiServiceError:
-            ai_reply = FALLBACK_RESPONSE
-            logger.warning(
-                "Gemini failed for session %s, using fallback", session.id
-            )
-
-        # Store bot response
         ChatMessage.objects.create(
             session=session,
             sender=ChatMessage.Sender.BOT,
-            message=ai_reply,
+            status=chatbot_reply.status,
+            detected_intent=chatbot_reply.detected_intent,
+            matched_product_name=chatbot_reply.matched_product_name,
+            message=chatbot_reply.reply,
         )
 
         # Touch session updated_at
@@ -131,7 +125,7 @@ class ChatbotView(APIView):
 
         return Response(
             {
-                "reply": ai_reply,
+                "reply": chatbot_reply.reply,
                 "session_id": str(session.id),
             },
             status=status.HTTP_200_OK,
@@ -171,6 +165,7 @@ class AdminChatSessionListView(JWTAdminMixin, generics.ListAPIView):
     def get_queryset(self):
         queryset = ChatSession.objects.annotate(
             message_count=Count("messages"),
+            last_message_at=Max("messages__created_at"),
         ).order_by("-updated_at")
 
         # Date filtering
@@ -187,6 +182,7 @@ class AdminChatSessionListView(JWTAdminMixin, generics.ListAPIView):
             queryset = queryset.filter(
                 Q(messages__message__icontains=search)
                 | Q(user_identifier__icontains=search)
+                | Q(messages__matched_product_name__icontains=search)
             ).distinct()
 
         return queryset
@@ -227,9 +223,22 @@ class AdminChatInsightsView(JWTAdminMixin, APIView):
 
         total_sessions = ChatSession.objects.count()
         total_messages = ChatMessage.objects.count()
+        bot_messages = ChatMessage.objects.filter(sender=ChatMessage.Sender.BOT).count()
         messages_today = ChatMessage.objects.filter(created_at__gte=today_start).count()
         active_sessions_24h = ChatSession.objects.filter(
             updated_at__gte=last_24h
+        ).count()
+        quote_intent_count = ChatMessage.objects.filter(
+            sender=ChatMessage.Sender.USER,
+            detected_intent__in=QUOTE_INTENTS,
+        ).count()
+        failed_responses_count = ChatMessage.objects.filter(
+            sender=ChatMessage.Sender.BOT,
+            status=ChatMessage.Status.FALLBACK,
+        ).count()
+        rate_limited_count = ChatMessage.objects.filter(
+            sender=ChatMessage.Sender.BOT,
+            status=ChatMessage.Status.RATE_LIMITED,
         ).count()
 
         # Recent messages (last 20)
@@ -239,6 +248,9 @@ class AdminChatInsightsView(JWTAdminMixin, APIView):
             .values(
                 "id",
                 "sender",
+                "status",
+                "detected_intent",
+                "matched_product_name",
                 "message",
                 "created_at",
                 "session_id",
@@ -252,6 +264,43 @@ class AdminChatInsightsView(JWTAdminMixin, APIView):
             .annotate(count=Count("id"))
             .order_by("-count")[:10]
         )
+        common_intents = list(
+            ChatMessage.objects.filter(sender=ChatMessage.Sender.USER)
+            .exclude(detected_intent="")
+            .values("detected_intent")
+            .annotate(count=Count("id"))
+            .order_by("-count")[:10]
+        )
+        most_requested_products = list(
+            ChatMessage.objects.filter(sender=ChatMessage.Sender.USER)
+            .exclude(matched_product_name="")
+            .values("matched_product_name")
+            .annotate(count=Count("id"))
+            .order_by("-count")[:10]
+        )
+        recent_failures = list(
+            ChatMessage.objects.filter(
+                sender=ChatMessage.Sender.BOT,
+                status__in=[ChatMessage.Status.FALLBACK, ChatMessage.Status.RATE_LIMITED],
+            )
+            .order_by("-created_at")[:10]
+            .values("id", "status", "message", "created_at", "session_id")
+        )
+        usage_statistics = {
+            "avg_messages_per_session": round(total_messages / total_sessions, 1)
+            if total_sessions
+            else 0,
+            "quote_intent_sessions": ChatSession.objects.filter(
+                messages__sender=ChatMessage.Sender.USER,
+                messages__detected_intent__in=QUOTE_INTENTS,
+            )
+            .distinct()
+            .count(),
+            "failed_response_rate": round((failed_responses_count / bot_messages) * 100, 1)
+            if bot_messages
+            else 0,
+            "rate_limited_rate": round((rate_limited_count / max(total_messages, 1)) * 100, 1),
+        }
 
         return Response(
             {
@@ -259,7 +308,14 @@ class AdminChatInsightsView(JWTAdminMixin, APIView):
                 "total_messages": total_messages,
                 "messages_today": messages_today,
                 "active_sessions_24h": active_sessions_24h,
+                "quote_intent_count": quote_intent_count,
+                "failed_responses_count": failed_responses_count,
+                "rate_limited_count": rate_limited_count,
                 "recent_messages": recent_messages,
                 "common_questions": common_questions,
+                "common_intents": common_intents,
+                "most_requested_products": most_requested_products,
+                "recent_failures": recent_failures,
+                "usage_statistics": usage_statistics,
             }
         )

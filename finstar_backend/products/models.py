@@ -63,7 +63,7 @@ class Product(models.Model):
     name = models.CharField(max_length=300)
     slug = models.SlugField(max_length=300, unique=True, db_index=True)
     description = models.TextField()
-    short_description = models.CharField(max_length=500, blank=True, default="")
+    short_description = models.CharField(max_length=1000, blank=True, default="")
     category = models.ForeignKey(
         Category,
         on_delete=models.CASCADE,
@@ -111,7 +111,18 @@ class Inquiry(models.Model):
 
     name = models.CharField(max_length=200)
     email = models.EmailField()
+    phone = models.CharField(max_length=30, blank=True, default="")
+    company = models.CharField(max_length=200, blank=True, default="")
+    subject = models.CharField(max_length=200, blank=True, default="")
     message = models.TextField()
+    products = models.JSONField(
+        blank=True,
+        null=True,
+        default=list,
+        help_text="List of product names the customer tagged/saved",
+    )
+    source_url = models.URLField(max_length=500, blank=True, default="")
+    email_sent = models.BooleanField(default=False, help_text="Set True once Resend emails are dispatched")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

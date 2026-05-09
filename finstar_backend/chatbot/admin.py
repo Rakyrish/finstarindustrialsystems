@@ -11,7 +11,14 @@ class ChatMessageInline(admin.TabularInline):
     """Inline display of messages within a chat session."""
 
     model = ChatMessage
-    readonly_fields = ("sender", "message", "created_at")
+    readonly_fields = (
+        "sender",
+        "status",
+        "detected_intent",
+        "matched_product_name",
+        "message",
+        "created_at",
+    )
     extra = 0
     ordering = ("created_at",)
 
@@ -56,10 +63,25 @@ class ChatSessionAdmin(admin.ModelAdmin):
 
 @admin.register(ChatMessage)
 class ChatMessageAdmin(admin.ModelAdmin):
-    list_display = ("short_session", "sender", "short_message", "created_at")
-    list_filter = ("sender", "created_at")
-    search_fields = ("message",)
-    readonly_fields = ("session", "sender", "message", "created_at")
+    list_display = (
+        "short_session",
+        "sender",
+        "status",
+        "detected_intent",
+        "short_message",
+        "created_at",
+    )
+    list_filter = ("sender", "status", "detected_intent", "created_at")
+    search_fields = ("message", "matched_product_name")
+    readonly_fields = (
+        "session",
+        "sender",
+        "status",
+        "detected_intent",
+        "matched_product_name",
+        "message",
+        "created_at",
+    )
     date_hierarchy = "created_at"
 
     def short_session(self, obj):

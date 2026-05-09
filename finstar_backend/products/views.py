@@ -399,22 +399,73 @@ class AdminProductDetailView(JWTAdminMixin, generics.RetrieveUpdateDestroyAPIVie
 
 # ── Public: inquiries ─────────────────────────────────────────────────────────
 
+_SUBJECT_MAP = {
+    "refrigeration": "Refrigeration Systems",
+    "hvac": "Air Conditioning / HVAC",
+    "boilers": "Boilers & Steam Systems",
+    "cold-rooms": "Cold Rooms & Insulation",
+    "fittings": "Industrial Fittings & Tools",
+    "maintenance": "Maintenance / Service",
+    "general": "General Inquiry",
+}
+
+
 class InquiryCreateView(generics.CreateAPIView):
     """
     POST /api/inquiries
-    Submit a contact form inquiry.
+
+    Flow:
+      1. Validate & save inquiry to database (always happens)
+      2. Trigger Resend emails (non-blocking — failure is logged, not raised)
+      3. Return 201 with success message
     """
     serializer_class = InquirySerializer
     queryset = Inquiry.objects.all()
 
     def create(self, request, *args, **kwargs):
+        from products.email_service import send_inquiry_emails, EmailPayload
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
+
+        # ── Step 1: Save to database ──────────────────────────────────────────
+        inquiry = serializer.save()
+
+        # ── Step 2: Build email payload ───────────────────────────────────────
+        subject_key = (inquiry.subject or "").strip().lower()
+        subject_label = _SUBJECT_MAP.get(subject_key, inquiry.subject or "General Inquiry")
+
+        payload = EmailPayload(
+            name=inquiry.name,
+            email=inquiry.email,
+            message=inquiry.message,
+            phone=inquiry.phone or "",
+            company=inquiry.company or "",
+            subject_label=subject_label,
+            products=inquiry.products or [],
+            source_url=inquiry.source_url or "",
+            inquiry_id=inquiry.pk,
+            submitted_at=inquiry.created_at,
+        )
+
+        # ── Step 3: Send emails (non-blocking) ────────────────────────────────
+        results = send_inquiry_emails(payload)
+
+        # Persist email_sent flag
+        email_dispatched = results.get("notification") or results.get("confirmation")
+        if email_dispatched:
+            inquiry.email_sent = True
+            inquiry.save(update_fields=["email_sent"])
+
         return Response(
-            {"message": "Inquiry submitted successfully.", "data": serializer.data},
+            {
+                "message": "Inquiry submitted successfully.",
+                "email_sent": email_dispatched,
+                "data": serializer.data,
+            },
             status=status.HTTP_201_CREATED,
         )
+
 
 
 # ── Admin: inquiries ──────────────────────────────────────────────────────────

@@ -6,16 +6,15 @@ import ContactButtons from "./ContactButtons";
 
 export default function Footer() {
   return (
-    <footer className="bg-slate-800 text-slate-300">
+    <footer className="relative bg-slate-800 text-slate-300">
+      {/* Orange accent bar — correctly at footer top */}
+      <div className="h-[3px] bg-gradient-to-r from-orange-400 via-orange-500 to-orange-400" />
       {/* Main Footer */}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand */}
-          {/* <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-orange-400 via-orange-500 to-orange-400" /> */}
-
           <div className="sm:col-span-2 lg:col-span-1">
-            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-orange-400 via-orange-500 to-orange-400" />
 
             <Link href="/" className="flex items-center gap-2 mb-4">
               <div className="w-10 h-10 lg:w-12 lg:h-12 bg-white rounded-lg flex items-center justify-center p-1.5 shadow-sm group-hover:bg-orange-50 transition-colors">
@@ -56,18 +55,18 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Products */}
-          <nav aria-label="Product category links">
+          {/* Products — all categories in 2-col grid */}
+          <nav aria-label="Product category links" className="sm:col-span-2 lg:col-span-1">
             <h3 className="text-white font-semibold text-sm uppercase tracking-wider mb-4">Product Categories</h3>
-            <ul className="space-y-2">
-              {navigationCategories.slice(0, 10).map((cat) => (
+            <ul className="grid grid-cols-2 gap-x-4 gap-y-2">
+              {navigationCategories.map((cat) => (
                 <li key={cat.id}>
                   <Link
                     href={buildCategoryPath(cat.slug)}
-                    className="text-slate-400 hover:text-orange-400 text-sm transition-colors flex items-center gap-1.5"
+                    className="text-slate-400 hover:text-orange-400 text-xs transition-colors flex items-center gap-1.5 leading-relaxed"
                   >
-                    <span>{cat.icon}</span>
-                    {cat.name}
+                    <span className="text-sm shrink-0">{cat.icon}</span>
+                    <span className="truncate">{cat.name}</span>
                   </Link>
                 </li>
               ))}
@@ -83,9 +82,11 @@ export default function Footer() {
                 { label: "Home", href: "/" },
                 { label: "About Us", href: "/about" },
                 { label: "All Products", href: "/products" },
-                { label: "Industrial Refrigeration", href: "/products/category/refrigeration" },
-                { label: "HVAC Systems", href: "/products/category/hvac" },
-                { label: "Cold Room Solutions", href: "/products/category/cold-rooms" },
+                { label: "Saved Products", href: "/saved" },
+                { label: "Industrial Refrigeration", href: buildCategoryPath("refrigeration") },
+                { label: "HVAC Systems", href: buildCategoryPath("hvac") },
+                { label: "Cold Room Solutions", href: buildCategoryPath("cold-rooms") },
+                { label: "Boilers & Steam", href: buildCategoryPath("boilers-steam-systems") },
                 { label: "Contact Us", href: "/contact" },
               ].map((link) => (
                 <li key={link.href}>

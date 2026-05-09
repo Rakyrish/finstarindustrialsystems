@@ -200,9 +200,14 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
 
 # ── OpenAI (AI product generation) ───────────────────────────────────────────
 OPENAI_API_KEY = config("OPENAI_API_KEY", default="")
+OPENAI_MODEL = config("OPENAI_MODEL", default="gpt-4o-mini")
+OPENAI_FALLBACK_MODEL = config("OPENAI_FALLBACK_MODEL", default="gpt-3.5-turbo")
 
-# ── Gemini (chatbot AI) ──────────────────────────────────────────────────────
-GEMINI_API_KEY = config("GEMINI_API_KEY", default="")
+# ── Resend (transactional email) ─────────────────────────────────────────────
+RESEND_API_KEY = config("RESEND_MAIL", default="")
+COMPANY_NOTIFICATION_EMAIL = config("COMPANY_EMAIL", default="finstarindustrial@gmail.com")
+COMPANY_FROM_EMAIL = config("FROM_EMAIL", default="Finstar Industrial Systems <onboarding@resend.dev>")
+SITE_URL = config("SITE_URL", default="https://finstarindustrials.com")
 
 # ── Production Security (behind nginx reverse proxy) ─────────────────────────
 if not DEBUG:
