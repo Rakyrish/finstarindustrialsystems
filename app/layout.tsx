@@ -18,6 +18,9 @@ import {
   DEFAULT_PHONE,
   SITE_URL,
 } from "@/lib/seo";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import SupportWidgetWrapper from "@/components/SupportWidgetWrapper";
+import { fetchAllProducts } from "@/lib/api";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -62,18 +65,18 @@ export const metadata: Metadata = {
   },
 };
 
-import { ThemeProvider } from "@/components/ThemeProvider";
-import SupportWidgetWrapper from "@/components/SupportWidgetWrapper";
-
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Fetch products for global search — gracefully handle API unavailability
+  const products = await fetchAllProducts().catch(() => []);
+
   return (
     <html lang="en-KE" className={inter.variable} suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
-        {/* Anti-FOUC: runs before any CSS is painted. Must stay inlined. */}
+        {/* Anti-FOUC: runs before any CSS is painted */}
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
@@ -81,7 +84,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`min-h-screen flex flex-col antialiased ${inter.variable}`}>
+      <body className={`min-h-screen flex flex-col antialiased ${inter.variable}`} suppressHydrationWarning>
         <ThemeProvider>
           <SeoGraphJsonLd>
             <OrganizationJsonLd />
@@ -90,7 +93,7 @@ export default function RootLayout({
             <SpeakableWebsiteJsonLd />
             <BusinessFactsJsonLd />
           </SeoGraphJsonLd>
-          <Navbar />
+          <Navbar products={products} />
           <main className="flex-1 pt-20 lg:pt-24">
             {children}
           </main>

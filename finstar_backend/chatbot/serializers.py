@@ -2,6 +2,9 @@
 DRF Serializers for chatbot conversation tracking.
 """
 
+import re
+
+from django.utils.html import strip_tags
 from rest_framework import serializers
 
 from .models import ChatMessage, ChatSession
@@ -12,7 +15,15 @@ class ChatMessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChatMessage
-        fields = ["id", "sender", "message", "created_at"]
+        fields = [
+            "id",
+            "sender",
+            "status",
+            "detected_intent",
+            "matched_product_name",
+            "message",
+            "created_at",
+        ]
         read_only_fields = ["id", "created_at"]
 
 
@@ -25,6 +36,7 @@ class ChatSessionListSerializer(serializers.ModelSerializer):
 
     message_count = serializers.IntegerField(read_only=True)
     last_message_preview = serializers.SerializerMethodField()
+    last_message_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = ChatSession
@@ -35,6 +47,7 @@ class ChatSessionListSerializer(serializers.ModelSerializer):
             "updated_at",
             "message_count",
             "last_message_preview",
+            "last_message_at",
         ]
 
     def get_last_message_preview(self, obj):
@@ -67,3 +80,10 @@ class ChatbotInputSerializer(serializers.Serializer):
 
     message = serializers.CharField(max_length=2000)
     session_id = serializers.UUIDField(required=False, allow_null=True)
+
+    def validate_message(self, value):
+        cleaned = strip_tags(value or "")
+        cleaned = re.sub(r"\s+", " ", cleaned).strip()
+        if len(cleaned) < 2:
+            raise serializers.ValidationError("Message must be at least 2 characters.")
+        return cleaned

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import {
     getAdminChatInsights,
     getAdminChatSession,
@@ -29,6 +29,7 @@ export default function AdminChatbotPage() {
     const [loading, setLoading] = useState(true);
     const [loadingConv, setLoadingConv] = useState(false);
     const [search, setSearch] = useState("");
+    const deferredSearch = useDeferredValue(search);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export default function AdminChatbotPage() {
         try {
             const [insightsData, sessionsData] = await Promise.all([
                 getAdminChatInsights(),
-                getAdminChatSessions({ page, search: search || undefined }),
+                getAdminChatSessions({ page, search: deferredSearch || undefined }),
             ]);
             setInsights(insightsData);
             setSessions(sessionsData.results);
@@ -50,7 +51,7 @@ export default function AdminChatbotPage() {
         } finally {
             setLoading(false);
         }
-    }, [page, search]);
+    }, [page, deferredSearch]);
 
     useEffect(() => {
         loadData();
@@ -70,13 +71,9 @@ export default function AdminChatbotPage() {
         }
     };
 
-    // Search debounce
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setPage(1);
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [search]);
+        setPage(1);
+    }, [deferredSearch]);
 
     const formatDate = (iso: string) => {
         const d = new Date(iso);
@@ -103,31 +100,37 @@ export default function AdminChatbotPage() {
         return <Spinner />;
     }
 
+    const statCards = [
+        { label: "Total Conversations", value: insights?.total_sessions ?? 0 },
+        { label: "Total Messages", value: insights?.total_messages ?? 0 },
+        { label: "Messages Today", value: insights?.messages_today ?? 0 },
+        { label: "Active (24h)", value: insights?.active_sessions_24h ?? 0 },
+        { label: "Quote Intent", value: insights?.quote_intent_count ?? 0 },
+        { label: "Failed Responses", value: insights?.failed_responses_count ?? 0 },
+        { label: "Rate Limited", value: insights?.rate_limited_count ?? 0 },
+        { label: "Avg Msg / Session", value: insights?.usage_statistics?.avg_messages_per_session ?? 0 },
+    ];
+
+    const formatIntent = (value?: string) =>
+        value
+            ? value
+                .split("_")
+                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                .join(" ")
+            : "General";
+
     return (
         <div className="admin-chat">
-            {/* Stats */}
             <div className="admin-chat__stats">
-                <div className="admin-chat__stat-card">
-                    <span className="admin-chat__stat-value">{insights?.total_sessions ?? 0}</span>
-                    <span className="admin-chat__stat-label">Total Conversations</span>
-                </div>
-                <div className="admin-chat__stat-card">
-                    <span className="admin-chat__stat-value">{insights?.total_messages ?? 0}</span>
-                    <span className="admin-chat__stat-label">Total Messages</span>
-                </div>
-                <div className="admin-chat__stat-card">
-                    <span className="admin-chat__stat-value">{insights?.messages_today ?? 0}</span>
-                    <span className="admin-chat__stat-label">Messages Today</span>
-                </div>
-                <div className="admin-chat__stat-card">
-                    <span className="admin-chat__stat-value">{insights?.active_sessions_24h ?? 0}</span>
-                    <span className="admin-chat__stat-label">Active (24h)</span>
-                </div>
+                {statCards.map(card => (
+                    <div key={card.label} className="admin-chat__stat-card">
+                        <span className="admin-chat__stat-value">{card.value}</span>
+                        <span className="admin-chat__stat-label">{card.label}</span>
+                    </div>
+                ))}
             </div>
 
-            {/* Main layout */}
             <div className="admin-chat__main">
-                {/* Session List */}
                 <div className="admin-chat__sessions">
                     <div className="admin-chat__sessions-header">
                         <h2 className="admin-chat__sessions-title">Conversations</h2>
@@ -171,6 +174,7 @@ export default function AdminChatbotPage() {
                                     <span className="admin-chat__session-count">
                                         {session.message_count} message{session.message_count !== 1 ? "s" : ""}
                                         {session.user_identifier ? ` • ${session.user_identifier}` : ""}
+                                        {session.last_message_at ? ` • ${formatShortDate(session.last_message_at)}` : ""}
                                     </span>
                                 </div>
                             ))
@@ -200,7 +204,6 @@ export default function AdminChatbotPage() {
                     )}
                 </div>
 
-                {/* Conversation View */}
                 <div className="admin-chat__conversation">
                     {loadingConv ? (
                         <Spinner />
@@ -227,6 +230,19 @@ export default function AdminChatbotPage() {
                                         <div className={`admin-chat__conv-bubble admin-chat__conv-bubble--${msg.sender}`}>
                                             {msg.message}
                                         </div>
+                                        <div className="admin-chat__conv-tags">
+                                            {msg.detected_intent && (
+                                                <span className="admin-chat__tag">{formatIntent(msg.detected_intent)}</span>
+                                            )}
+                                            {msg.matched_product_name && (
+                                                <span className="admin-chat__tag">{msg.matched_product_name}</span>
+                                            )}
+                                            {msg.status && msg.status !== "normal" && (
+                                                <span className="admin-chat__tag admin-chat__tag--alert">
+                                                    {formatIntent(msg.status)}
+                                                </span>
+                                            )}
+                                        </div>
                                         <span className="admin-chat__conv-time">
                                             {formatDate(msg.created_at)}
                                         </span>
@@ -243,6 +259,70 @@ export default function AdminChatbotPage() {
                         </div>
                     )}
                 </div>
+            </div>
+
+            <div className="admin-chat__insights-grid">
+                <section className="admin-chat__insight-card">
+                    <div className="admin-chat__insight-head">
+                        <h3>Common Questions</h3>
+                        <span>{insights?.common_questions.length ?? 0}</span>
+                    </div>
+                    <div className="admin-chat__insight-list">
+                        {(insights?.common_questions ?? []).map(item => (
+                            <div key={item.message} className="admin-chat__insight-row">
+                                <span>{item.message}</span>
+                                <strong>{item.count}</strong>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                <section className="admin-chat__insight-card">
+                    <div className="admin-chat__insight-head">
+                        <h3>Requested Products</h3>
+                        <span>{insights?.most_requested_products.length ?? 0}</span>
+                    </div>
+                    <div className="admin-chat__insight-list">
+                        {(insights?.most_requested_products ?? []).map(item => (
+                            <div key={item.matched_product_name} className="admin-chat__insight-row">
+                                <span>{item.matched_product_name}</span>
+                                <strong>{item.count}</strong>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                <section className="admin-chat__insight-card">
+                    <div className="admin-chat__insight-head">
+                        <h3>Intent Breakdown</h3>
+                        <span>{insights?.usage_statistics?.quote_intent_sessions ?? 0} quote sessions</span>
+                    </div>
+                    <div className="admin-chat__insight-list">
+                        {(insights?.common_intents ?? []).map(item => (
+                            <div key={item.detected_intent} className="admin-chat__insight-row">
+                                <span>{formatIntent(item.detected_intent)}</span>
+                                <strong>{item.count}</strong>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                <section className="admin-chat__insight-card">
+                    <div className="admin-chat__insight-head">
+                        <h3>Recent Failures</h3>
+                        <span>{insights?.recent_failures.length ?? 0}</span>
+                    </div>
+                    <div className="admin-chat__insight-list">
+                        {(insights?.recent_failures ?? []).map(item => (
+                            <div key={item.id} className="admin-chat__insight-row admin-chat__insight-row--stacked">
+                                <span className="admin-chat__failure-meta">
+                                    {formatIntent(item.status)} • {formatShortDate(item.created_at)} • #{item.session_id.slice(0, 8)}
+                                </span>
+                                <span>{item.message}</span>
+                            </div>
+                        ))}
+                    </div>
+                </section>
             </div>
         </div>
     );

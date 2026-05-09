@@ -11,7 +11,7 @@
 | **Frontend** | Next.js 16 (TypeScript, App Router, Tailwind CSS v4) |
 | **Backend** | Django 5.2 (Django REST Framework, JWT Authentication) |
 | **Database** | PostgreSQL 16 |
-| **AI Services** | OpenAI (product content), Google Gemini (chatbot) |
+| **AI Services** | OpenAI (product content and chatbot) |
 | **Image Storage** | Cloudinary |
 | **Reverse Proxy** | Nginx (gzip, SSL, caching) |
 | **SSL** | Let's Encrypt (auto-renewal via Certbot) |
@@ -196,7 +196,8 @@ docker compose logs -f --tail=50
 | `CLOUDINARY_API_KEY` | Cloudinary API key | `123456789` |
 | `CLOUDINARY_API_SECRET` | Cloudinary API secret | `your-secret` |
 | `OPENAI_API_KEY` | OpenAI API key | `sk-...` |
-| `GEMINI_API_KEY` | Google Gemini API key | `AI...` |
+| `OPENAI_MODEL` | Primary chatbot model | `gpt-4.1-mini` |
+| `OPENAI_FALLBACK_MODEL` | Chatbot fallback model | `gpt-4.1-nano` |
 | `SSL_EMAIL` | Email for Let's Encrypt notifications | `admin@finstarindustrials.com` |
 | `SSL_STAGING` | Set to `1` for Let's Encrypt staging (testing) | `0` |
 
@@ -294,7 +295,7 @@ finstarindustrialsystems/
 ├── finstar_backend/            # Django backend
 │   ├── config/                 # Django settings & URLs
 │   ├── products/               # Products app (models, views, AI)
-│   ├── chatbot/                # Chatbot app (Gemini AI)
+│   ├── chatbot/                # Chatbot app (OpenAI sales assistant)
 │   ├── requirements.txt        # Python dependencies
 │   ├── Dockerfile              # Backend Docker image
 │   └── entrypoint.sh           # Production entrypoint

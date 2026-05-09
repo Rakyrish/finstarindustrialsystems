@@ -85,14 +85,58 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(Inquiry)
 class InquiryAdmin(admin.ModelAdmin):
-    list_display = ("name", "email", "created_at")
-    list_filter = ("created_at",)
-    search_fields = ("name", "email", "message")
-    readonly_fields = ("name", "email", "message", "created_at")
+    list_display = (
+        "name", "email", "phone", "company",
+        "subject", "email_sent", "created_at",
+    )
+    list_filter = ("email_sent", "subject", "created_at")
+    search_fields = ("name", "email", "company", "message")
+    readonly_fields = (
+        "name", "email", "phone", "company", "subject",
+        "message", "products", "source_url", "email_sent", "created_at",
+    )
     date_hierarchy = "created_at"
+    fieldsets = (
+        ("Customer", {
+            "fields": ("name", "email", "phone", "company"),
+        }),
+        ("Inquiry", {
+            "fields": ("subject", "message", "products", "source_url"),
+        }),
+        ("System", {
+            "fields": ("email_sent", "created_at"),
+            "classes": ("collapse",),
+        }),
+    )
 
     def has_add_permission(self, request):
         return False  # Inquiries come from the frontend only
 
     def has_change_permission(self, request, obj=None):
         return False  # Read-only view
+
+    actions = ["resend_emails"]
+
+    @admin.action(description="Re-send notification + confirmation emails")
+    def resend_emails(self, request, queryset):
+        from products.email_service import send_inquiry_emails, EmailPayload
+        sent = 0
+        for inquiry in queryset:
+            payload = EmailPayload(
+                name=inquiry.name,
+                email=inquiry.email,
+                phone=inquiry.phone or "",
+                company=inquiry.company or "",
+                subject_label=inquiry.subject or "General Inquiry",
+                message=inquiry.message,
+                products=inquiry.products or [],
+                source_url=inquiry.source_url or "",
+                inquiry_id=inquiry.pk,
+                submitted_at=inquiry.created_at,
+            )
+            results = send_inquiry_emails(payload)
+            if results.get("notification") or results.get("confirmation"):
+                inquiry.email_sent = True
+                inquiry.save(update_fields=["email_sent"])
+                sent += 1
+        self.message_user(request, f"Emails re-sent for {sent} of {queryset.count()} inquiries.")

@@ -124,7 +124,11 @@ class AdminProductSerializer(serializers.ModelSerializer):
 class AdminInquirySerializer(serializers.ModelSerializer):
     class Meta:
         model = Inquiry
-        fields = ["id", "name", "email", "message", "created_at"]
+        fields = [
+            "id", "name", "email", "phone", "company",
+            "subject", "message", "products", "source_url",
+            "email_sent", "created_at",
+        ]
         read_only_fields = fields
 
 
@@ -133,7 +137,10 @@ class InquirySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Inquiry
-        fields = ["id", "name", "email", "message", "created_at"]
+        fields = [
+            "id", "name", "email", "phone", "company",
+            "subject", "message", "products", "source_url", "created_at",
+        ]
         read_only_fields = ["id", "created_at"]
 
     def validate_name(self, value):
@@ -150,6 +157,20 @@ class InquirySerializer(serializers.ModelSerializer):
         if len(value.strip()) < 10:
             raise serializers.ValidationError("Message must be at least 10 characters.")
         return value.strip()
+
+    def validate_phone(self, value):
+        return value.strip()
+
+    def validate_company(self, value):
+        return value.strip()
+
+    def validate_products(self, value):
+        """Ensure products is a list of strings (from saved-products feature)."""
+        if value is None:
+            return []
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Products must be a list.")
+        return [str(item) for item in value if item][:20]  # cap at 20
 
 class InventoryItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
