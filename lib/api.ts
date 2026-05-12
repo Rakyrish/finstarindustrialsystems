@@ -105,7 +105,7 @@ export type MovementType =
   | "sale"
   | "adjustment"
   | "return"
-  | "damage"
+  | "damaged"
   | "transfer";
 
 export interface StockAdjustPayload {
@@ -611,7 +611,9 @@ export async function getAdminStockMovements(options?: {
 export interface ApiStandaloneInventoryItem {
   id: number;
   name: string;
+  sku: string;
   section: string;
+  unit: string;
   quantity_in_stock: number;
   cost_price: string;        // Django DecimalField → string in JSON
   sell_price: string;
@@ -620,13 +622,19 @@ export interface ApiStandaloneInventoryItem {
   margin_percent: number | null;
   created_at: string;
   updated_at: string;
+  // Google Sheets sync metadata
+  synced_at: string | null;
+  sync_status: string;
+  google_sheet_row_id: number | null;
 }
 
 /** Frontend camelCase shape for standalone inventory items */
 export interface StandaloneInventoryItem {
   id: number;
   name: string;
+  sku: string;
   section: string;
+  unit: string;
   qty: number;
   costPrice: number;
   sellPrice: number;
@@ -635,6 +643,10 @@ export interface StandaloneInventoryItem {
   marginPercent: number | null;
   createdAt: string;
   updatedAt: string;
+  // Google Sheets sync metadata
+  syncedAt: string | null;
+  syncStatus: string;
+  googleSheetRowId: number | null;
 }
 
 /** Payload for bulk CSV import */
@@ -643,6 +655,7 @@ export interface BulkImportPayload {
     name: string;
     section: string;
     qty: number;
+    unit?: string;
     costPrice: number;
     sellPrice: number;
     reorderLevel: number;
@@ -661,6 +674,7 @@ export interface BulkImportResponse {
 export interface StandaloneInventoryWritePayload {
   name: string;
   section: string;
+  unit: string;
   quantity_in_stock: number;
   cost_price: number | string;
   sell_price: number | string;
@@ -686,7 +700,9 @@ function mapStandaloneInventoryItem(item: ApiStandaloneInventoryItem): Standalon
   return {
     id: item.id,
     name: item.name,
+    sku: item.sku,
     section: item.section,
+    unit: item.unit,
     qty: item.quantity_in_stock,
     costPrice: parseFloat(item.cost_price) || 0,
     sellPrice: parseFloat(item.sell_price) || 0,
@@ -695,6 +711,9 @@ function mapStandaloneInventoryItem(item: ApiStandaloneInventoryItem): Standalon
     marginPercent: item.margin_percent,
     createdAt: item.created_at,
     updatedAt: item.updated_at,
+    syncedAt: item.synced_at ?? null,
+    syncStatus: item.sync_status ?? "",
+    googleSheetRowId: item.google_sheet_row_id ?? null,
   };
 }
 
@@ -775,6 +794,100 @@ export async function adjustStandaloneInventoryStock(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
+  });
+}
+
+// ── Admin API: Google Sheets Sync ───────────────────────────────────────────
+
+export interface SyncLogData {
+  id: number;
+  sync_type: string;
+  sync_type_label: string;
+  status: string;
+  status_label: string;
+  items_synced: number;
+  error_message: string;
+  started_at: string;
+  completed_at: string | null;
+  triggered_by: string;
+  triggered_by_label: string;
+  duration_seconds: number;
+  created_at: string;
+}
+
+export interface SheetsSyncStatusResponse {
+  enabled: boolean;
+  configured: boolean;
+  available: boolean;
+  status_reason: string;
+  spreadsheet_id: string;
+  last_sync: SyncLogData | null;
+  last_success_at: string | null;
+  job_counts: {
+    pending: number;
+    processing: number;
+    retry: number;
+    failed: number;
+  };
+  stats_24h: {
+    total: number;
+    success: number;
+    failure: number;
+    partial: number;
+    skipped: number;
+  };
+}
+
+export async function getSheetsSyncStatus() {
+  return authFetchAPI<SheetsSyncStatusResponse>("/admin/sheets/status", { next: { revalidate: 0 } });
+}
+
+export async function triggerSheetsSyncNow() {
+  return authFetchAPI<{ detail: string; message: string }>("/admin/sheets/sync-now", {
+    method: "POST",
+  });
+}
+
+export async function getSheetsSyncLogs(options?: { status?: string; limit?: number }) {
+  const params = new URLSearchParams();
+  if (options?.status) params.set("status", options.status);
+  if (options?.limit) params.set("limit", String(options.limit));
+  const query = params.toString();
+
+  return authFetchAPI<{ logs: SyncLogData[]; count: number }>(
+    query ? `/admin/sheets/logs?${query}` : "/admin/sheets/logs",
+    { next: { revalidate: 0 } }
+  );
+}
+
+/** Response from POST /api/admin/sheets/test-connection */
+export interface SheetsTestConnectionResponse {
+  success: boolean;
+  message: string;
+  step?: string;
+  spreadsheet_id?: string;
+  spreadsheet_title?: string;
+  sheets?: { id: number; title: string }[];
+  elapsed_seconds?: number;
+}
+
+/**
+ * POST /api/admin/sheets/test-connection
+ * Verifies Google Sheets credentials, read access, and write permissions.
+ */
+export async function testSheetsConnection(): Promise<SheetsTestConnectionResponse> {
+  return authFetchAPI<SheetsTestConnectionResponse>("/admin/sheets/test-connection", {
+    method: "POST",
+  });
+}
+
+/**
+ * POST /api/admin/sheets/retry-failed
+ * Resets all FAILED sync jobs back to PENDING for the worker to retry.
+ */
+export async function retryFailedSyncJobs(): Promise<{ detail: string; retried: number }> {
+  return authFetchAPI<{ detail: string; retried: number }>("/admin/sheets/retry-failed", {
+    method: "POST",
   });
 }
 

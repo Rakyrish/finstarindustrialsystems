@@ -29,6 +29,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from .models import StandaloneInventoryItem, StandaloneInventoryMovement
+from .schema_state import column_exists
 from .serializers import (
     StandaloneInventoryItemSerializer,
     StandaloneInventoryMovementSerializer,
@@ -75,6 +76,7 @@ class BulkImportItemSerializer(drf_serializers.Serializer):
     name = drf_serializers.CharField(max_length=300)
     section = drf_serializers.CharField(max_length=100, default="Uncategorised")
     qty = drf_serializers.IntegerField(min_value=0, default=0)
+    unit = drf_serializers.CharField(max_length=30, default="unit", required=False)
     costPrice = drf_serializers.FloatField(min_value=0, default=0)
     sellPrice = drf_serializers.FloatField(min_value=0, default=0)
     reorderLevel = drf_serializers.IntegerField(min_value=0, default=5)
@@ -90,6 +92,19 @@ class StandaloneInventoryViewSet(JWTAdminMixin, viewsets.ModelViewSet):
       - bulk_import (POST /bulk-import/)
     """
     serializer_class = StandaloneInventoryItemSerializer
+
+    def list(self, request, *args, **kwargs):
+        if not column_exists("products_standaloneinventoryitem", "sku"):
+            return Response(
+                {
+                    "detail": (
+                        "Inventory schema update required. Run the latest Django migrations "
+                        "for the backend before using standalone inventory."
+                    )
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
         qs = StandaloneInventoryItem.objects.all()
@@ -120,6 +135,36 @@ class StandaloneInventoryViewSet(JWTAdminMixin, viewsets.ModelViewSet):
 
     # Disable pagination for this viewset — return plain list
     pagination_class = None
+
+    def perform_create(self, serializer):
+        inventory_item = serializer.save()
+        if inventory_item.quantity_in_stock > 0:
+            StandaloneInventoryMovement.objects.create(
+                inventory_item=inventory_item,
+                movement_type=StandaloneInventoryMovement.MovementType.INITIAL,
+                quantity_delta=inventory_item.quantity_in_stock,
+                quantity_before=0,
+                quantity_after=inventory_item.quantity_in_stock,
+                notes="Item created from inventory dashboard",
+                performed_by=self.request.user,
+            )
+
+    def perform_update(self, serializer):
+        inventory_item = serializer.instance
+        quantity_before = inventory_item.quantity_in_stock
+        updated_item = serializer.save()
+        quantity_after = updated_item.quantity_in_stock
+
+        if quantity_after != quantity_before:
+            StandaloneInventoryMovement.objects.create(
+                inventory_item=updated_item,
+                movement_type=StandaloneInventoryMovement.MovementType.ADJUSTMENT,
+                quantity_delta=quantity_after - quantity_before,
+                quantity_before=quantity_before,
+                quantity_after=quantity_after,
+                notes="Direct inventory quantity edit from dashboard",
+                performed_by=self.request.user,
+            )
 
     # ── POST /api/admin/standalone-inventory/{id}/adjust/ ─────────────────
 
@@ -241,6 +286,7 @@ class StandaloneInventoryViewSet(JWTAdminMixin, viewsets.ModelViewSet):
         created_count = 0
         updated_count = 0
         errors = []
+        synced_items = []
 
         with transaction.atomic():
             for idx, item_data in enumerate(validated):
@@ -248,6 +294,7 @@ class StandaloneInventoryViewSet(JWTAdminMixin, viewsets.ModelViewSet):
                 section = item_data.get("section", "Uncategorised").strip()
                 if not section:
                     section = "Uncategorised"
+                unit = item_data.get("unit", "unit").strip() or "unit"
 
                 try:
                     cost_price = Decimal(str(item_data.get("costPrice", 0)))
@@ -260,20 +307,61 @@ class StandaloneInventoryViewSet(JWTAdminMixin, viewsets.ModelViewSet):
                 reorder_level = max(0, int(item_data.get("reorderLevel", 5)))
 
                 try:
-                    obj, created = StandaloneInventoryItem.objects.update_or_create(
-                        name=name,
-                        section=section,
-                        defaults={
-                            "quantity_in_stock": qty,
-                            "cost_price": cost_price,
-                            "sell_price": sell_price,
-                            "reorder_level": reorder_level,
-                        },
+                    obj = (
+                        StandaloneInventoryItem.objects
+                        .filter(name=name, section=section)
+                        .first()
                     )
+                    created = obj is None
+
+                    if created:
+                        obj = StandaloneInventoryItem(
+                            name=name,
+                            section=section,
+                            unit=unit,
+                            quantity_in_stock=qty,
+                            cost_price=cost_price,
+                            sell_price=sell_price,
+                            reorder_level=reorder_level,
+                        )
+                        quantity_before = 0
+                    else:
+                        quantity_before = obj.quantity_in_stock
+                        obj.unit = unit
+                        obj.quantity_in_stock = qty
+                        obj.cost_price = cost_price
+                        obj.sell_price = sell_price
+                        obj.reorder_level = reorder_level
+
+                    obj._skip_sheet_sync = True
+                    obj._skip_low_stock_alert = True
+                    obj.save()
+
                     if created:
                         created_count += 1
+                        if qty > 0:
+                            StandaloneInventoryMovement.objects.create(
+                                inventory_item=obj,
+                                movement_type=StandaloneInventoryMovement.MovementType.INITIAL,
+                                quantity_delta=qty,
+                                quantity_before=0,
+                                quantity_after=qty,
+                                notes="Initial quantity from CSV bulk import",
+                                performed_by=request.user,
+                            )
                     else:
                         updated_count += 1
+                        if quantity_before != qty:
+                            StandaloneInventoryMovement.objects.create(
+                                inventory_item=obj,
+                                movement_type=StandaloneInventoryMovement.MovementType.IMPORT,
+                                quantity_delta=qty - quantity_before,
+                                quantity_before=quantity_before,
+                                quantity_after=qty,
+                                notes="Quantity updated from CSV bulk import",
+                                performed_by=request.user,
+                            )
+                    synced_items.append(obj)
                 except Exception as exc:
                     errors.append({"row": idx, "name": name, "error": str(exc)})
 
@@ -284,6 +372,25 @@ class StandaloneInventoryViewSet(JWTAdminMixin, viewsets.ModelViewSet):
             updated_count,
             len(errors),
         )
+
+        if synced_items:
+            try:
+                from .services.inventory_sync import enqueue_standalone_batch_upsert
+                items_for_sync = synced_items[:]
+                transaction.on_commit(
+                    lambda: enqueue_standalone_batch_upsert(
+                        items_for_sync,
+                        triggered_by="bulk_import",
+                        requested_by=request.user,
+                    )
+                )
+                logger.info(
+                    "[Sheets] Queued batch sync for %d imported standalone items by user_id=%s",
+                    len(items_for_sync),
+                    request.user.id,
+                )
+            except Exception as exc:
+                logger.error("[Sheets] Failed to queue batch sync after bulk import: %s", exc)
 
         resp = {
             "detail": f"Import complete: {created_count} created, {updated_count} updated.",

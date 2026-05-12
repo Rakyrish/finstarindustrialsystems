@@ -7,10 +7,13 @@ from unittest.mock import patch
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
+from django.test.utils import override_settings
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from .models import Category, Inquiry, Product
+from .models import Category, Inquiry, InventoryItem, InventorySyncJob, Product, StandaloneInventoryItem, SyncLog
+from .sheets_service import ServiceState
+from .services.inventory_sync import enqueue_standalone_upsert, process_pending_sync_jobs
 
 
 User = get_user_model()
@@ -416,3 +419,117 @@ class AIGenerateProductAPITests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("required", response.data["detail"].lower())
 
+
+@override_settings(
+    GOOGLE_SHEETS_ENABLED=True,
+    GOOGLE_SHEETS_SPREADSHEET_ID="spreadsheet-123",
+    GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account"}',
+    GOOGLE_SHEETS_STANDALONE_TAB="Standalone Inventory",
+    GOOGLE_SHEETS_INVENTORY_TAB="Product Inventory",
+)
+class InventorySyncTests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.category = Category.objects.create(name="Sync Inventory")
+        self.product = Product.objects.create(
+            name="Sync Product",
+            description="Inventory sync coverage",
+            short_description="Sync",
+            category=self.category,
+        )
+        self.staff_user = User.objects.create_user(
+            username="syncstaff",
+            email="syncstaff@example.com",
+            password="StrongPass123!",
+            is_staff=True,
+        )
+        token_response = self.client.post(
+            "/api/auth/token",
+            {"username": "syncstaff", "password": "StrongPass123!"},
+            format="json",
+        )
+        self.admin_client = APIClient()
+        self.admin_client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {token_response.data['access']}"
+        )
+
+    def test_product_creation_registers_inventory_item_via_signal(self):
+        self.assertTrue(InventoryItem.objects.filter(product=self.product).exists())
+
+    def test_standalone_item_save_queues_incremental_sync_job(self):
+        with self.captureOnCommitCallbacks(execute=True):
+            item = StandaloneInventoryItem.objects.create(
+                name="BALL VALVE",
+                section="Section A",
+                quantity_in_stock=8,
+                cost_price=100,
+                sell_price=150,
+            )
+
+        queued_job = InventorySyncJob.objects.get(item_key=item.sku)
+        self.assertEqual(queued_job.operation, InventorySyncJob.Operation.UPSERT)
+        self.assertEqual(queued_job.scope, InventorySyncJob.Scope.STANDALONE)
+
+    @patch("products.services.inventory_sync.get_sheets_service")
+    @patch("products.services.inventory_sync.get_sheets_service_state")
+    def test_sync_worker_processes_queued_job(self, mock_state, mock_service):
+        class DummySheetsService:
+            def __init__(self):
+                self.synced = []
+
+            def sync_records(self, tab_name, records):
+                self.synced.append((tab_name, records))
+                return len(records)
+
+        dummy_service = DummySheetsService()
+        mock_state.return_value = ServiceState(
+            enabled=True,
+            configured=True,
+            available=True,
+            reason="",
+        )
+        mock_service.return_value = dummy_service
+
+        item = StandaloneInventoryItem.objects.create(
+            name="CHECK VALVE",
+            section="Section B",
+            quantity_in_stock=4,
+            cost_price=50,
+            sell_price=80,
+        )
+        enqueue_standalone_upsert(item, triggered_by="manual", requested_by=self.staff_user)
+
+        summary = process_pending_sync_jobs(batch_size=10)
+
+        self.assertEqual(summary["success"], 1)
+        self.assertEqual(len(dummy_service.synced), 1)
+        self.assertEqual(SyncLog.objects.filter(status=SyncLog.SyncStatus.SUCCESS).count(), 1)
+
+    def test_bulk_import_queues_batch_sync_job(self):
+        payload = {
+            "items": [
+                {
+                    "name": "PRESSURE GAUGE",
+                    "section": "Section C",
+                    "qty": 12,
+                    "costPrice": 40,
+                    "sellPrice": 70,
+                    "reorderLevel": 3,
+                }
+            ]
+        }
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.admin_client.post(
+                "/api/admin/standalone-inventory/bulk-import/",
+                payload,
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(
+            InventorySyncJob.objects.filter(
+                operation=InventorySyncJob.Operation.BATCH_UPSERT,
+                scope=InventorySyncJob.Scope.STANDALONE,
+            ).exists()
+        )

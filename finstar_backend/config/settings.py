@@ -70,6 +70,7 @@ CORS_ALLOW_HEADERS = [
     "user-agent",
     "x-csrftoken",
     "x-requested-with",
+    "x-sheets-webhook-secret",
 ]
 
 # ── CSRF ──────────────────────────────────────────────────────────────────────
@@ -209,6 +210,17 @@ COMPANY_NOTIFICATION_EMAIL = config("COMPANY_EMAIL", default="finstarindustrial@
 COMPANY_FROM_EMAIL = config("FROM_EMAIL", default="Finstar Industrial Systems <onboarding@resend.dev>")
 SITE_URL = config("SITE_URL", default="https://finstarindustrials.com")
 
+# ── Google Sheets Inventory Sync ──────────────────────────────────────────────
+GOOGLE_SHEETS_ENABLED = config("GOOGLE_SHEETS_ENABLED", default=False, cast=bool)
+GOOGLE_SHEETS_SPREADSHEET_ID = config("GOOGLE_SHEETS_SPREADSHEET_ID", default="")
+GOOGLE_SERVICE_ACCOUNT_JSON = config("GOOGLE_SERVICE_ACCOUNT_JSON", default="")
+# Tab names within the spreadsheet
+GOOGLE_SHEETS_STANDALONE_TAB = config("GOOGLE_SHEETS_STANDALONE_TAB", default="Standalone Inventory")
+GOOGLE_SHEETS_INVENTORY_TAB = config("GOOGLE_SHEETS_INVENTORY_TAB", default="Product Inventory")
+
+# Webhook secret — Google Apps Script sends this in X-Sheets-Webhook-Secret header
+SHEETS_WEBHOOK_SECRET = config("SHEETS_WEBHOOK_SECRET", default="")
+
 # ── Production Security (behind nginx reverse proxy) ─────────────────────────
 if not DEBUG:
     # Trust X-Forwarded-Proto header from nginx
@@ -276,6 +288,16 @@ LOGGING = {
             "propagate": False,
         },
         "chatbot": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "products.sheets": {
+            "handlers": ["console", "file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "products.sync": {
             "handlers": ["console", "file"],
             "level": "INFO",
             "propagate": False,

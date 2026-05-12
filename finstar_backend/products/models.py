@@ -11,7 +11,9 @@ Core models:
 
 from django.contrib.auth import get_user_model
 from django.db import models
+from django.utils import timezone
 from django.utils.text import slugify
+from uuid import uuid4
 
 
 User = get_user_model()
@@ -30,6 +32,13 @@ def generate_unique_slug(model_class, base_value, instance_pk=None):
         counter += 1
 
     return slug
+
+
+def generate_unique_sku(model_class, prefix="FSI"):
+    while True:
+        candidate = f"{prefix}-{uuid4().hex[:8].upper()}"
+        if not model_class.objects.filter(sku=candidate).exists():
+            return candidate
 
 
 class Category(models.Model):
@@ -148,6 +157,19 @@ class InventoryItem(models.Model):
     quantity_in_stock = models.PositiveIntegerField(default=0)
     reorder_level = models.PositiveIntegerField(default=2)
     last_updated = models.DateTimeField(auto_now=True)
+    # ── Google Sheets sync metadata ───────────────────────────────────────────
+    synced_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Timestamp of last successful Google Sheets sync.",
+    )
+    sync_status = models.CharField(
+        max_length=20, blank=True, default="",
+        help_text="Last sync result: 'success', 'failure', or empty.",
+    )
+    google_sheet_row_id = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="1-based row number in the Google Sheet.",
+    )
 
     class Meta:
         ordering = ["product__name"]
@@ -241,13 +263,28 @@ class StandaloneInventoryItem(models.Model):
     """
 
     name = models.CharField(max_length=300, db_index=True)
+    sku = models.CharField(max_length=64, unique=True, blank=True)
     section = models.CharField(max_length=100, default="Uncategorised")
+    unit = models.CharField(max_length=30, default="unit")
     quantity_in_stock = models.PositiveIntegerField(default=0)
     cost_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     sell_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     reorder_level = models.PositiveIntegerField(default=5)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    # ── Google Sheets sync metadata ───────────────────────────────────────────
+    synced_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Timestamp of last successful Google Sheets sync.",
+    )
+    sync_status = models.CharField(
+        max_length=20, blank=True, default="",
+        help_text="Last sync result: 'success', 'failure', or empty.",
+    )
+    google_sheet_row_id = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="1-based row number in the Google Sheet.",
+    )
 
     class Meta:
         ordering = ["name"]
@@ -263,7 +300,12 @@ class StandaloneInventoryItem(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.name} ({self.section})"
+        return f"{self.sku} — {self.name} ({self.section})"
+
+    def save(self, *args, **kwargs):
+        if not self.sku:
+            self.sku = generate_unique_sku(StandaloneInventoryItem)
+        super().save(*args, **kwargs)
 
     @property
     def stock_status(self):
@@ -335,3 +377,148 @@ class StandaloneInventoryMovement(models.Model):
             f"{self.get_movement_type_display()} "
             f"{direction}{self.quantity_delta} × {self.inventory_item.name}"
         )
+
+
+# ── Sync Log (Google Sheets integration audit trail) ──────────────────────────
+
+class SyncLog(models.Model):
+    """
+    Records every Google Sheets sync attempt.
+
+    Used by the admin dashboard Sync Status panel and the
+    /api/admin/sheets/logs endpoint.
+    """
+
+    class SyncType(models.TextChoices):
+        INCREMENTAL = "incremental", "Incremental Sync"
+        FULL = "full", "Full Sync"
+        DELETE = "delete", "Row Deletion"
+
+    class SyncStatus(models.TextChoices):
+        SUCCESS = "success", "Success"
+        FAILURE = "failure", "Failure"
+        PARTIAL = "partial", "Partial (some errors)"
+        SKIPPED = "skipped", "Skipped (Sheets disabled)"
+
+    class TriggerSource(models.TextChoices):
+        SIGNAL = "signal", "Auto (DB Signal)"
+        MANUAL = "manual", "Manual (Sync Now)"
+        BULK_IMPORT = "bulk_import", "Bulk CSV Import"
+
+    sync_type = models.CharField(
+        max_length=20,
+        choices=SyncType.choices,
+        default=SyncType.INCREMENTAL,
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=SyncStatus.choices,
+        db_index=True,
+    )
+    items_synced = models.PositiveIntegerField(default=0)
+    error_message = models.TextField(blank=True, default="")
+    started_at = models.DateTimeField()
+    completed_at = models.DateTimeField(null=True, blank=True)
+    triggered_by = models.CharField(
+        max_length=20,
+        choices=TriggerSource.choices,
+        default=TriggerSource.SIGNAL,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "-created_at"]),
+            models.Index(fields=["triggered_by", "-created_at"]),
+        ]
+
+    def __str__(self):
+        duration = ""
+        if self.completed_at and self.started_at:
+            delta = self.completed_at - self.started_at
+            duration = f" ({delta.total_seconds():.1f}s)"
+        return (
+            f"[{self.get_status_display()}] {self.get_sync_type_display()} "
+            f"— {self.items_synced} item(s){duration}"
+        )
+
+    @property
+    def duration_seconds(self) -> float:
+        if self.completed_at and self.started_at:
+            return (self.completed_at - self.started_at).total_seconds()
+        return 0.0
+
+
+class InventorySyncJob(models.Model):
+    """Durable background job queue for Google Sheets synchronization."""
+
+    class Scope(models.TextChoices):
+        STANDALONE = "standalone", "Standalone Inventory"
+        PRODUCT = "product", "Product Inventory"
+        SYSTEM = "system", "System-wide"
+
+    class Operation(models.TextChoices):
+        UPSERT = "upsert", "Upsert Row"
+        BATCH_UPSERT = "batch_upsert", "Batch Upsert Rows"
+        DELETE = "delete", "Delete Row"
+        FULL_SYNC = "full_sync", "Full Sync"
+
+    class JobStatus(models.TextChoices):
+        PENDING = "pending", "Pending"
+        PROCESSING = "processing", "Processing"
+        RETRY = "retry", "Retry Scheduled"
+        SUCCESS = "success", "Success"
+        FAILED = "failed", "Failed"
+        SKIPPED = "skipped", "Skipped"
+        CANCELLED = "cancelled", "Cancelled"
+
+    scope = models.CharField(max_length=20, choices=Scope.choices)
+    operation = models.CharField(max_length=20, choices=Operation.choices)
+    status = models.CharField(
+        max_length=20,
+        choices=JobStatus.choices,
+        default=JobStatus.PENDING,
+        db_index=True,
+    )
+    triggered_by = models.CharField(
+        max_length=20,
+        choices=SyncLog.TriggerSource.choices,
+        default=SyncLog.TriggerSource.SIGNAL,
+        db_index=True,
+    )
+    item_key = models.CharField(
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="Stable spreadsheet row identifier, typically the SKU.",
+        db_index=True,
+    )
+    payload = models.JSONField(blank=True, default=dict)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    max_attempts = models.PositiveSmallIntegerField(default=5)
+    last_error = models.TextField(blank=True, default="")
+    requested_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="inventory_sync_jobs",
+    )
+    next_attempt_at = models.DateTimeField(default=timezone.now, db_index=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["status", "next_attempt_at"]),
+            models.Index(fields=["scope", "item_key", "status"]),
+            models.Index(fields=["triggered_by", "created_at"]),
+        ]
+
+    def __str__(self):
+        key = self.item_key or self.scope
+        return f"{self.get_operation_display()} [{self.get_status_display()}] {key}"

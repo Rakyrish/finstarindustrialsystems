@@ -42,7 +42,6 @@ class EmailPayload:
     source_url: str = ""
     inquiry_id: Optional[int] = None
     submitted_at: Optional[datetime] = None
-
     def __post_init__(self):
         if self.submitted_at is None:
             self.submitted_at = datetime.now()
@@ -77,7 +76,7 @@ def _base_wrapper(content: str, title: str) -> str:
                   </td>
                   <td style="text-align:right;vertical-align:middle;">
                     <div style="background:#fff;width:48px;height:48px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;">
-                      <span style="color:#fff;font-size:22px;line-height:48px;display:block;text-align:center;">https://finstarindustrials.com/_next/image?url=%2Flogo.png&w=128&q=75</span>
+                      <img src="https://finstarindustrials.com/_next/image?url=%2Flogo.png&w=128&q=75" alt="Finstar Logo" style="width:100%;height:100%;object-fit:contain;border-radius:12px;" />
                     </div>
                   </td>
                 </tr>
@@ -368,3 +367,102 @@ def send_inquiry_emails(payload: EmailPayload) -> dict[str, bool]:
         )
 
     return results
+
+
+# ── Low-Stock Alert ────────────────────────────────────────────────────────────
+
+def send_low_stock_alert(
+    item_name: str,
+    quantity: int,
+    reorder_level: int,
+    section: str | None = None,
+) -> bool:
+    """
+    Send a low-stock email alert to the admin/company email.
+
+    Called from signals.py when quantity <= reorder_level.
+    Never raises — all exceptions are caught and logged.
+
+    Returns True if email was sent successfully.
+    """
+    api_key = getattr(settings, "RESEND_API_KEY", "")
+    if not api_key:
+        logger.warning(
+            "[EmailService] RESEND_API_KEY not configured — low-stock alert skipped for '%s'",
+            item_name,
+        )
+        return False
+
+    resend.api_key = api_key
+    from_addr = getattr(settings, "COMPANY_FROM_EMAIL", "Finstar Industrial Systems <onboarding@resend.dev>")
+    company_email = getattr(settings, "COMPANY_NOTIFICATION_EMAIL", "finstarindustrial@gmail.com")
+
+    status_label = "OUT OF STOCK" if quantity == 0 else "LOW STOCK"
+    status_color = "#dc2626" if quantity == 0 else "#f97316"
+    status_bg = "#fef2f2" if quantity == 0 else "#fff7ed"
+    emoji = "🚫" if quantity == 0 else "⚠️"
+    section_row = (
+        f'<p style="margin:0 0 6px;font-size:13px;color:#64748b;">'
+        f'<strong style="color:#0f172a;">Section:</strong> {section}</p>'
+    ) if section else ""
+
+    content = f"""
+      <div style="background:{status_bg};border-left:4px solid {status_color};border-radius:0 8px 8px 0;padding:14px 16px;margin-bottom:24px;">
+        <p style="margin:0;font-size:14px;font-weight:700;color:{status_color};">
+          {emoji} {status_label} ALERT — Immediate attention required
+        </p>
+      </div>
+
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:20px;">
+        <p style="margin:0 0 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;">Item Details</p>
+        <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#0f172a;">{item_name}</p>
+        {section_row}
+        <p style="margin:0 0 6px;font-size:13px;color:#64748b;">
+          <strong style="color:#0f172a;">Current Stock:</strong>
+          <span style="color:{status_color};font-weight:700;font-size:16px;margin-left:4px;">{quantity} unit(s)</span>
+        </p>
+        <p style="margin:0;font-size:13px;color:#64748b;">
+          <strong style="color:#0f172a;">Reorder Level:</strong> {reorder_level} unit(s)
+        </p>
+      </div>
+
+      <div style="background:linear-gradient(135deg,#0f4c81,#1a6cb8);border-radius:12px;padding:20px;margin:20px 0;">
+        <p style="margin:0 0 10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#93c5fd;">Recommended Action</p>
+        <p style="margin:0;font-size:14px;color:#ffffff;line-height:1.6;">
+          Please contact your supplier to restock <strong>{item_name}</strong> immediately.
+          Update the inventory in the admin dashboard once the stock is received.
+        </p>
+      </div>
+
+      <div style="margin-top:20px;text-align:center;">
+        <a href="{getattr(settings, 'SITE_URL', 'https://finstarindustrials.com')}/admin-dashboard"
+           style="display:inline-block;background:linear-gradient(135deg,{status_color},{status_color}cc);color:#ffffff;font-size:14px;font-weight:700;padding:14px 32px;border-radius:10px;text-decoration:none;">
+          View Inventory Dashboard
+        </a>
+        <p style="margin:12px 0 0;font-size:11px;color:#94a3b8;">
+          This alert was triggered automatically by the Finstar inventory system.
+        </p>
+      </div>
+    """
+
+    html = _base_wrapper(content, f"{emoji} {status_label}: {item_name}")
+
+    try:
+        resend.Emails.send({
+            "from": from_addr,
+            "to": [company_email],
+            "subject": f"[Finstar Inventory] {status_label}: {item_name} — only {quantity} left",
+            "html": html,
+        })
+        logger.info(
+            "[EmailService] Low-stock alert sent for '%s' (qty=%d, reorder=%d)",
+            item_name, quantity, reorder_level,
+        )
+        return True
+    except Exception as exc:
+        logger.error(
+            "[EmailService] Low-stock alert FAILED for '%s': %s",
+            item_name, exc, exc_info=True,
+        )
+        return False
+

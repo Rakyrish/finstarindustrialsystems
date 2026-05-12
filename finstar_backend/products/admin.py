@@ -6,7 +6,11 @@ from django.contrib import admin
 from .models import (
     Category, Product, Inquiry, InventoryItem,
     StandaloneInventoryItem, StandaloneInventoryMovement,
+    SyncLog, InventorySyncJob,
 )
+
+
+# ── StandaloneInventoryItem ───────────────────────────────────────────────────
 
 @admin.register(StandaloneInventoryItem)
 class StandaloneInventoryItemAdmin(admin.ModelAdmin):
@@ -19,6 +23,29 @@ class StandaloneInventoryItemAdmin(admin.ModelAdmin):
     search_fields = ['name', 'section']
     readonly_fields = ['stock_status', 'margin_percent', 'created_at', 'updated_at']
     ordering = ['name']
+    actions = ['sync_selected_to_sheets', 'sync_all_to_sheets']
+
+    @admin.action(description="📊 Sync selected items to Google Sheets")
+    def sync_selected_to_sheets(self, request, queryset):
+        from products.services.inventory_sync import enqueue_standalone_upsert
+
+        for item in queryset:
+            enqueue_standalone_upsert(item, triggered_by="manual", requested_by=request.user)
+
+        self.message_user(
+            request,
+            f"Queued Google Sheets sync for {queryset.count()} standalone item(s).",
+        )
+
+    @admin.action(description="📊 Full Sync ALL inventory to Google Sheets")
+    def sync_all_to_sheets(self, request, queryset):
+        from products.services.inventory_sync import enqueue_full_sync
+
+        enqueue_full_sync(triggered_by="manual", requested_by=request.user)
+        self.message_user(
+            request,
+            "Queued a full Google Sheets sync. Check the Sync Logs for status.",
+        )
 
 
 @admin.register(StandaloneInventoryMovement)
@@ -35,6 +62,7 @@ class StandaloneInventoryMovementAdmin(admin.ModelAdmin):
     ordering = ['-created_at']
 
 
+# ── InventoryItem (product-linked) ────────────────────────────────────────────
 
 @admin.register(InventoryItem)
 class InventoryItemAdmin(admin.ModelAdmin):
@@ -48,11 +76,26 @@ class InventoryItemAdmin(admin.ModelAdmin):
     search_fields = ['sku', 'product__name']
     readonly_fields = ['stock_status', 'margin_percent', 'last_updated']
     ordering = ['product__name']
+    actions = ['sync_selected_to_sheets']
 
     def category(self, obj):
         return obj.product.category.name if obj.product.category else '—'
     category.short_description = 'Category'
 
+    @admin.action(description="📊 Sync selected items to Google Sheets")
+    def sync_selected_to_sheets(self, request, queryset):
+        from products.services.inventory_sync import enqueue_inventory_upsert
+
+        for item in queryset:
+            enqueue_inventory_upsert(item, triggered_by="manual", requested_by=request.user)
+
+        self.message_user(
+            request,
+            f"Queued Google Sheets sync for {queryset.count()} product inventory item(s).",
+        )
+
+
+# ── Category ──────────────────────────────────────────────────────────────────
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -60,6 +103,8 @@ class CategoryAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
     search_fields = ("name",)
 
+
+# ── Product ───────────────────────────────────────────────────────────────────
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
@@ -82,6 +127,8 @@ class ProductAdmin(admin.ModelAdmin):
         }),
     )
 
+
+# ── Inquiry ───────────────────────────────────────────────────────────────────
 
 @admin.register(Inquiry)
 class InquiryAdmin(admin.ModelAdmin):
@@ -140,3 +187,72 @@ class InquiryAdmin(admin.ModelAdmin):
                 inquiry.save(update_fields=["email_sent"])
                 sent += 1
         self.message_user(request, f"Emails re-sent for {sent} of {queryset.count()} inquiries.")
+
+
+# ── SyncLog (Google Sheets audit trail) ───────────────────────────────────────
+
+@admin.register(SyncLog)
+class SyncLogAdmin(admin.ModelAdmin):
+    list_display = [
+        'id', 'sync_type', 'status', 'items_synced',
+        'triggered_by', 'duration_display', 'created_at',
+    ]
+    list_filter = ['status', 'sync_type', 'triggered_by']
+    readonly_fields = [
+        'sync_type', 'status', 'items_synced', 'error_message',
+        'started_at', 'completed_at', 'triggered_by', 'created_at',
+        'duration_seconds',
+    ]
+    ordering = ['-created_at']
+    date_hierarchy = 'created_at'
+
+    def duration_display(self, obj):
+        s = obj.duration_seconds
+        if s < 1:
+            return f"{s*1000:.0f}ms"
+        return f"{s:.1f}s"
+    duration_display.short_description = "Duration"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(InventorySyncJob)
+class InventorySyncJobAdmin(admin.ModelAdmin):
+    list_display = [
+        "id",
+        "scope",
+        "operation",
+        "status",
+        "item_key",
+        "attempts",
+        "triggered_by",
+        "next_attempt_at",
+        "created_at",
+    ]
+    list_filter = ["scope", "operation", "status", "triggered_by"]
+    search_fields = ["item_key", "last_error"]
+    readonly_fields = [
+        "scope",
+        "operation",
+        "status",
+        "triggered_by",
+        "item_key",
+        "payload",
+        "attempts",
+        "max_attempts",
+        "last_error",
+        "requested_by",
+        "next_attempt_at",
+        "started_at",
+        "completed_at",
+        "created_at",
+        "updated_at",
+    ]
+    ordering = ["created_at"]
+
+    def has_add_permission(self, request):
+        return False
