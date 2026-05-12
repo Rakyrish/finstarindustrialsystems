@@ -18,11 +18,17 @@ from .views import (
     AdminInquiryListView,
     AdminProductDetailView,
     AdminProductListCreateView,
+    AdminSheetsSyncNowView,
+    AdminSheetsSyncStatusView,
+    AdminSheetsSyncLogsView,
+    AdminSheetsTestConnectionView,
+    AdminSheetsRetryFailedView,
     CategoryListView,
     HealthCheckView,
     InquiryCreateView,
     ProductDetailView,
     ProductListView,
+    SheetsWebhookView,
     StaffTokenObtainPairView,
 )
 
@@ -95,4 +101,23 @@ urlpatterns = [
     # --- Admin stock movements (all items) ---
     path("admin/stock-movements", StockMovementListView.as_view(), name="admin-stock-movements"),
     path("admin/stock-movements/", StockMovementListView.as_view()),
+
+    # --- Admin: Google Sheets sync ---
+    path("admin/sheets/sync-now", AdminSheetsSyncNowView.as_view(), name="admin-sheets-sync-now"),
+    path("admin/sheets/sync-now/", AdminSheetsSyncNowView.as_view()),
+    path("admin/sheets/status", AdminSheetsSyncStatusView.as_view(), name="admin-sheets-status"),
+    path("admin/sheets/status/", AdminSheetsSyncStatusView.as_view()),
+    path("admin/sheets/logs", AdminSheetsSyncLogsView.as_view(), name="admin-sheets-logs"),
+    path("admin/sheets/logs/", AdminSheetsSyncLogsView.as_view()),
+    # Test connection — verifies credentials, read, and write access
+    path("admin/sheets/test-connection", AdminSheetsTestConnectionView.as_view(), name="admin-sheets-test-connection"),
+    path("admin/sheets/test-connection/", AdminSheetsTestConnectionView.as_view()),
+    # Retry failed — resets all FAILED jobs back to PENDING
+    path("admin/sheets/retry-failed", AdminSheetsRetryFailedView.as_view(), name="admin-sheets-retry-failed"),
+    path("admin/sheets/retry-failed/", AdminSheetsRetryFailedView.as_view()),
+
+    # --- Google Sheets → Website webhook (called by Google Apps Script) ---
+    # No auth/CSRF — protected by X-Sheets-Webhook-Secret header
+    path("inventory/google-sync", SheetsWebhookView.as_view(), name="sheets-webhook"),
+    path("inventory/google-sync/", SheetsWebhookView.as_view()),
 ]

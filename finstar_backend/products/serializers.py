@@ -5,7 +5,15 @@ DRF Serializers for FINSTAR API.
 from urllib.parse import urlparse
 
 from rest_framework import serializers
-from .models import Category, Product, Inquiry, InventoryItem
+from .models import (
+    Category,
+    Inquiry,
+    InventoryItem,
+    Product,
+    StandaloneInventoryItem,
+    StandaloneInventoryMovement,
+    StockMovement,
+)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -187,15 +195,12 @@ class InventoryItemSerializer(serializers.ModelSerializer):
             'sku', 'unit', 'cost_price', 'unit_price',
             'quantity_in_stock', 'reorder_level',
             'stock_status', 'margin_percent', 'last_updated',
+            'synced_at', 'sync_status', 'google_sheet_row_id',
         ]
-        read_only_fields = ['last_updated', 'stock_status', 'margin_percent']
-# -----------------------------------------------------------------------
-# Add StockMovementSerializer to your existing serializers.py.
-# Inquiry serializers are UNCHANGED — no product/quantity fields.
-# -----------------------------------------------------------------------
-
-from rest_framework import serializers
-from .models import StockMovement
+        read_only_fields = [
+            'last_updated', 'stock_status', 'margin_percent',
+            'synced_at', 'sync_status', 'google_sheet_row_id',
+        ]
 
 
 class StockMovementSerializer(serializers.ModelSerializer):
@@ -232,8 +237,6 @@ class StockMovementSerializer(serializers.ModelSerializer):
 
 # ── Standalone Inventory Serializers ──────────────────────────────────────────
 
-from .models import StandaloneInventoryItem, StandaloneInventoryMovement
-
 
 class StandaloneInventoryItemSerializer(serializers.ModelSerializer):
     stock_status = serializers.ReadOnlyField()
@@ -244,7 +247,9 @@ class StandaloneInventoryItemSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "sku",
             "section",
+            "unit",
             "quantity_in_stock",
             "cost_price",
             "sell_price",
@@ -253,13 +258,28 @@ class StandaloneInventoryItemSerializer(serializers.ModelSerializer):
             "margin_percent",
             "created_at",
             "updated_at",
+            "synced_at",
+            "sync_status",
+            "google_sheet_row_id",
         ]
-        read_only_fields = ["id", "stock_status", "margin_percent", "created_at", "updated_at"]
+        read_only_fields = [
+            "id", "sku", "stock_status", "margin_percent",
+            "created_at", "updated_at",
+            "synced_at", "sync_status", "google_sheet_row_id",
+        ]
 
     def validate_name(self, value):
         if not value or not value.strip():
             raise serializers.ValidationError("Item name is required.")
         return value.strip().upper()
+
+    def validate_section(self, value):
+        value = value.strip()
+        return value or "Uncategorised"
+
+    def validate_unit(self, value):
+        value = value.strip()
+        return value or "unit"
 
 
 class StandaloneInventoryMovementSerializer(serializers.ModelSerializer):

@@ -40,6 +40,28 @@ services:
       db:
         condition: service_healthy
 
+  inventory-sync-worker:
+    build:
+      context: ./finstar_backend
+      dockerfile: Dockerfile
+    environment:
+      DEBUG: "True"
+      DB_HOST: db
+      DB_PORT: 5432
+      ALLOWED_HOSTS: "localhost,127.0.0.1,backend,0.0.0.0"
+      CORS_ALLOWED_ORIGINS: "http://localhost:3000"
+      CSRF_TRUSTED_ORIGINS: "http://localhost:3000"
+    entrypoint: ["/bin/bash", "-lc"]
+    command: "python manage.py migrate --noinput && python manage.py run_inventory_sync_worker --sleep-seconds 2"
+    volumes:
+      - ./finstar_backend:/app
+      - /app/__pycache__
+      - backend-logs:/app/logs
+    user: root
+    depends_on:
+      db:
+        condition: service_healthy
+
   frontend:
     build:
       context: .

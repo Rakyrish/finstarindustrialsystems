@@ -33,6 +33,7 @@ from .models import (
     StandaloneInventoryItem, StandaloneInventoryMovement
 )
 from .pagination import ProductPagination
+from .schema_state import table_exists
 from .serializers import (
     AdminCategorySerializer,
     AdminInquirySerializer,
@@ -577,3 +578,491 @@ class AIGenerateProductView(JWTAdminMixin, APIView):
             )
 
         return Response(details, status=status.HTTP_200_OK)
+
+
+# ── Admin: Google Sheets sync ──────────────────────────────────────────────────
+
+class AdminSheetsSyncNowView(JWTAdminMixin, APIView):
+    """
+    POST /api/admin/sheets/sync-now
+
+    Triggers a full background sync of all inventory to Google Sheets.
+    Returns immediately — sync runs in a background thread.
+    """
+
+    def post(self, request):
+        from .services.inventory_sync import enqueue_full_sync
+        from .sheets_service import get_sheets_service_state
+
+        state = get_sheets_service_state()
+        if not state.enabled:
+            return Response(
+                {"detail": "Google Sheets sync is disabled. Set GOOGLE_SHEETS_ENABLED=True in your environment."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not state.configured:
+            return Response(
+                {"detail": "Google Sheets sync is not fully configured. Check spreadsheet ID and service account credentials."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        job = enqueue_full_sync(triggered_by="manual", requested_by=request.user)
+        logger.info("[Sheets] Manual full sync queued by user_id=%s (job_id=%s)", request.user.id, job.id)
+
+        return Response({
+            "detail": "Full inventory sync queued.",
+            "message": "The background sync worker will reconcile both inventory sheets shortly.",
+            "job_id": job.id,
+        })
+
+
+class AdminSheetsSyncStatusView(JWTAdminMixin, APIView):
+    """
+    GET /api/admin/sheets/status
+
+    Returns current sync configuration status and last sync summary.
+    """
+
+    def get(self, request):
+        from django.conf import settings as dj_settings
+        from .models import InventorySyncJob, SyncLog
+        from .sheets_service import get_sheets_service_state
+
+        state = get_sheets_service_state()
+        enabled = getattr(dj_settings, "GOOGLE_SHEETS_ENABLED", False)
+        spreadsheet_id = getattr(dj_settings, "GOOGLE_SHEETS_SPREADSHEET_ID", "")
+        configured = state.configured
+
+        if not table_exists("products_inventorysyncjob"):
+            return Response(
+                {
+                    "enabled": enabled,
+                    "configured": False,
+                    "available": False,
+                    "status_reason": "migration_required",
+                    "spreadsheet_id": "",
+                    "last_sync": None,
+                    "last_success_at": None,
+                    "job_counts": {
+                        "pending": 0,
+                        "processing": 0,
+                        "retry": 0,
+                        "failed": 0,
+                    },
+                    "stats_24h": {
+                        "total": 0,
+                        "success": 0,
+                        "failure": 0,
+                        "partial": 0,
+                        "skipped": 0,
+                    },
+                    "detail": (
+                        "Inventory sync schema update required. Run the latest Django migrations "
+                        "before using Google Sheets sync."
+                    ),
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        # Last sync entry
+        last_sync = SyncLog.objects.order_by("-created_at").first()
+        last_sync_data = None
+        if last_sync:
+            last_sync_data = {
+                "id": last_sync.id,
+                "sync_type": last_sync.sync_type,
+                "sync_type_label": last_sync.get_sync_type_display(),
+                "status": last_sync.status,
+                "status_label": last_sync.get_status_display(),
+                "items_synced": last_sync.items_synced,
+                "error_message": last_sync.error_message,
+                "started_at": last_sync.started_at,
+                "completed_at": last_sync.completed_at,
+                "triggered_by": last_sync.triggered_by,
+                "triggered_by_label": last_sync.get_triggered_by_display(),
+                "duration_seconds": last_sync.duration_seconds,
+                "created_at": last_sync.created_at,
+            }
+
+        last_success = SyncLog.objects.filter(status=SyncLog.SyncStatus.SUCCESS).order_by("-completed_at").first()
+
+        from django.utils import timezone as tz
+        from datetime import timedelta
+        since_24h = tz.now() - timedelta(hours=24)
+        recent_logs = SyncLog.objects.filter(created_at__gte=since_24h)
+        jobs = InventorySyncJob.objects.all()
+
+        return Response({
+            "enabled": enabled,
+            "configured": configured,
+            "available": state.available and configured,
+            "status_reason": state.reason,
+            "spreadsheet_id": spreadsheet_id if configured else "",
+            "last_sync": last_sync_data,
+            "last_success_at": last_success.completed_at if last_success else None,
+            "job_counts": {
+                "pending": jobs.filter(status=InventorySyncJob.JobStatus.PENDING).count(),
+                "processing": jobs.filter(status=InventorySyncJob.JobStatus.PROCESSING).count(),
+                "retry": jobs.filter(status=InventorySyncJob.JobStatus.RETRY).count(),
+                "failed": jobs.filter(status=InventorySyncJob.JobStatus.FAILED).count(),
+            },
+            "stats_24h": {
+                "total": recent_logs.count(),
+                "success": recent_logs.filter(status="success").count(),
+                "failure": recent_logs.filter(status="failure").count(),
+                "partial": recent_logs.filter(status="partial").count(),
+                "skipped": recent_logs.filter(status="skipped").count(),
+            },
+        })
+
+
+class AdminSheetsSyncLogsView(JWTAdminMixin, APIView):
+    """
+    GET /api/admin/sheets/logs
+
+    Returns recent sync log entries (last 50).
+    Optional query params: ?status=failure&limit=20
+    """
+
+    def get(self, request):
+        from .models import SyncLog
+
+        if not table_exists("products_inventorysyncjob"):
+            return Response(
+                {
+                    "logs": [],
+                    "count": 0,
+                    "detail": (
+                        "Inventory sync schema update required. Run the latest Django migrations "
+                        "before using Google Sheets sync logs."
+                    ),
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        qs = SyncLog.objects.all()
+
+        status_filter = request.query_params.get("status")
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+
+        limit = min(int(request.query_params.get("limit", 50)), 200)
+        qs = qs[:limit]
+
+        logs = [
+            {
+                "id": log.id,
+                "sync_type": log.sync_type,
+                "sync_type_label": log.get_sync_type_display(),
+                "status": log.status,
+                "status_label": log.get_status_display(),
+                "items_synced": log.items_synced,
+                "error_message": log.error_message,
+                "started_at": log.started_at,
+                "completed_at": log.completed_at,
+                "triggered_by": log.triggered_by,
+                "triggered_by_label": log.get_triggered_by_display(),
+                "duration_seconds": log.duration_seconds,
+                "created_at": log.created_at,
+            }
+            for log in qs
+        ]
+
+        return Response({"logs": logs, "count": len(logs)})
+
+
+class AdminSheetsTestConnectionView(JWTAdminMixin, APIView):
+    """
+    POST /api/admin/sheets/test-connection
+
+    Verifies:
+    1. Credentials are configured and service account JSON is valid
+    2. The spreadsheet exists and is accessible (read)
+    3. Write permissions are confirmed
+
+    Returns a clear success or failure response with diagnostic details.
+    """
+
+    def post(self, request):
+        import time as _time
+        from .sheets_service import get_sheets_service_state, get_sheets_service
+
+        t0 = _time.perf_counter()
+        state = get_sheets_service_state()
+
+        if not state.enabled:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Google Sheets sync is disabled. Set GOOGLE_SHEETS_ENABLED=True in your .env file.",
+                    "step": "config_check",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not state.configured:
+            return Response(
+                {
+                    "success": False,
+                    "message": f"Configuration incomplete: {state.reason}. Check GOOGLE_SHEETS_SPREADSHEET_ID and GOOGLE_SERVICE_ACCOUNT_JSON in .env.",
+                    "step": "config_check",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        service = get_sheets_service()
+        if not service:
+            return Response(
+                {
+                    "success": False,
+                    "message": "Failed to initialize Google Sheets API client. Check your service account JSON for syntax errors.",
+                    "step": "auth",
+                },
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        spreadsheet_id = getattr(settings, "GOOGLE_SHEETS_SPREADSHEET_ID", "")
+
+        # Step 1 — Read access: fetch spreadsheet metadata
+        try:
+            meta = service.get_spreadsheet_metadata()
+        except Exception as exc:
+            logger.error(
+                "[Sheets] Test connection READ failed for spreadsheet_id=%s: %s",
+                spreadsheet_id, exc,
+            )
+            return Response(
+                {
+                    "success": False,
+                    "message": f"Cannot read spreadsheet: {str(exc)[:300]}. Ensure the sheet is shared with the service account email.",
+                    "step": "read_access",
+                    "spreadsheet_id": spreadsheet_id,
+                },
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        spreadsheet_title = meta.get("properties", {}).get("title", "Unknown")
+        sheets = [
+            {"id": s["properties"]["sheetId"], "title": s["properties"]["title"]}
+            for s in meta.get("sheets", [])
+        ]
+
+        # Step 2 — Write access: attempt a harmless write then immediately undo it
+        test_tab = "_finstar_test_"
+        try:
+            from .sheets_service import SyncRecord, DATA_START_ROW
+            service._ensure_tab_and_headers(test_tab)
+            service._service.spreadsheets().values().append(
+                spreadsheetId=spreadsheet_id,
+                range=f"'{test_tab}'!A:J",
+                valueInputOption="USER_ENTERED",
+                insertDataOption="INSERT_ROWS",
+                body={"values": [["__test__", "__test__", "", 0, "", 0, 0, 0, "", ""] ]},
+            ).execute()
+            # Clean up: delete the test tab
+            sheet_id = service._get_sheet_id(test_tab)
+            service._service.spreadsheets().batchUpdate(
+                spreadsheetId=spreadsheet_id,
+                body={"requests": [{"deleteSheet": {"sheetId": sheet_id}}]},
+            ).execute()
+        except Exception as exc:
+            logger.error(
+                "[Sheets] Test connection WRITE failed for spreadsheet_id=%s: %s",
+                spreadsheet_id, exc,
+            )
+            return Response(
+                {
+                    "success": False,
+                    "message": f"Read access OK but write test failed: {str(exc)[:300]}. Ensure the service account has 'Editor' access to the spreadsheet.",
+                    "step": "write_access",
+                    "spreadsheet_id": spreadsheet_id,
+                    "spreadsheet_title": spreadsheet_title,
+                    "sheets": sheets,
+                },
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        elapsed = round(_time.perf_counter() - t0, 2)
+        logger.info(
+            "[Sheets] Test connection PASSED | spreadsheet_id=%s title='%s' elapsed=%ss user_id=%s",
+            spreadsheet_id, spreadsheet_title, elapsed, request.user.id,
+        )
+
+        return Response(
+            {
+                "success": True,
+                "message": f"Google Sheets connection verified successfully in {elapsed}s. Read & write access confirmed.",
+                "spreadsheet_id": spreadsheet_id,
+                "spreadsheet_title": spreadsheet_title,
+                "sheets": sheets,
+                "elapsed_seconds": elapsed,
+            }
+        )
+
+
+class AdminSheetsRetryFailedView(JWTAdminMixin, APIView):
+    """
+    POST /api/admin/sheets/retry-failed
+
+    Resets all FAILED InventorySyncJob records back to PENDING
+    so the background worker picks them up on its next cycle.
+    """
+
+    def post(self, request):
+        from .models import InventorySyncJob
+        from .schema_state import table_exists
+
+        if not table_exists("products_inventorysyncjob"):
+            return Response(
+                {"detail": "Inventory sync schema update required. Run the latest Django migrations first."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        failed_qs = InventorySyncJob.objects.filter(status=InventorySyncJob.JobStatus.FAILED)
+        count = failed_qs.count()
+
+        if count == 0:
+            return Response({"detail": "No failed sync jobs to retry.", "retried": 0})
+
+        from django.utils import timezone as tz
+        failed_qs.update(
+            status=InventorySyncJob.JobStatus.PENDING,
+            next_attempt_at=tz.now(),
+            last_error="",
+            attempts=0,
+        )
+
+        logger.info(
+            "[Sheets] %d failed sync job(s) reset to PENDING by user_id=%s",
+            count, request.user.id,
+        )
+
+        return Response(
+            {
+                "detail": f"{count} failed job(s) queued for retry.",
+                "retried": count,
+            }
+        )
+
+
+# ── Google Sheets → Website Webhook ───────────────────────────────────────────
+
+
+class SheetsWebhookView(APIView):
+    """
+    POST /api/inventory/google-sync/
+
+    Receives change notifications from Google Apps Script when someone edits
+    the Google Sheet directly. Updates PostgreSQL to reflect the change.
+
+    Security: caller must supply the correct secret token in the
+    X-Sheets-Webhook-Secret header. The endpoint is intentionally exempt from
+    CSRF and JWT authentication because it is called by Apps Script — not a
+    browser user.
+
+    Loop prevention: before saving, we set instance._skip_sheet_sync = True so
+    that the Django post_save signal does NOT queue another Google Sheets sync
+    job. This prevents infinite sync loops.
+    """
+
+    authentication_classes = []   # no JWT needed — uses shared secret
+    permission_classes = []       # public endpoint, protected by secret
+
+    def post(self, request, *args, **kwargs):
+        # ── 1. Authenticate via shared secret ──────────────────────────────
+        expected_secret = getattr(settings, "SHEETS_WEBHOOK_SECRET", "")
+        incoming_secret = request.headers.get("X-Sheets-Webhook-Secret", "")
+
+        if not expected_secret:
+            logger.error("[Sheets Webhook] SHEETS_WEBHOOK_SECRET is not configured on server.")
+            return Response(
+                {"error": "Webhook not configured on server."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        import hmac
+        if not hmac.compare_digest(expected_secret, incoming_secret):
+            logger.warning(
+                "[Sheets Webhook] Rejected request — invalid secret | ip=%s",
+                request.META.get("REMOTE_ADDR", "unknown"),
+            )
+            return Response(
+                {"error": "Unauthorized. Invalid webhook secret."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        # ── 2. Parse and validate payload ───────────────────────────────────
+        data = request.data
+        sku = str(data.get("sku", "")).strip()
+        if not sku:
+            return Response(
+                {"error": "Missing required field: sku"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Collect optional fields; at least one must be provided
+        updates = {}
+        raw_qty = data.get("quantity")
+        raw_reorder = data.get("reorder_level")
+        raw_cost = data.get("cost_price")
+        raw_sell = data.get("sell_price")
+
+        try:
+            if raw_qty is not None:
+                updates["quantity_in_stock"] = int(raw_qty)
+            if raw_reorder is not None:
+                updates["reorder_level"] = int(raw_reorder)
+            if raw_cost is not None:
+                updates["cost_price"] = float(raw_cost)
+            if raw_sell is not None:
+                updates["sell_price"] = float(raw_sell)
+        except (ValueError, TypeError) as exc:
+            return Response(
+                {"error": f"Invalid numeric value: {exc}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not updates:
+            return Response(
+                {"error": "No updatable fields provided (quantity, reorder_level, cost_price, sell_price)."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # ── 3. Locate item by SKU (standalone inventory only) ───────────────
+        from .models import StandaloneInventoryItem
+
+        try:
+            item = StandaloneInventoryItem.objects.get(sku=sku)
+        except StandaloneInventoryItem.DoesNotExist:
+            logger.warning("[Sheets Webhook] Unknown SKU=%s — item not found in DB.", sku)
+            return Response(
+                {"error": f"No inventory item found with SKU '{sku}'."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # ── 4. Apply updates with loop-prevention flag ──────────────────────
+        for field, value in updates.items():
+            setattr(item, field, value)
+
+        # This flag tells the Django post_save signal NOT to queue a Sheets
+        # sync job, preventing an infinite update loop.
+        item._skip_sheet_sync = True
+
+        item.save(update_fields=list(updates.keys()) + ["updated_at"])
+
+        logger.info(
+            "[Sheets Webhook] Updated SKU=%s | fields=%s | ip=%s",
+            sku,
+            list(updates.keys()),
+            request.META.get("REMOTE_ADDR", "unknown"),
+        )
+
+        return Response(
+            {
+                "ok": True,
+                "sku": sku,
+                "updated_fields": list(updates.keys()),
+                "new_values": updates,
+            },
+            status=status.HTTP_200_OK,
+        )

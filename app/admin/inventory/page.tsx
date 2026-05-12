@@ -29,6 +29,7 @@ import {
     isAPIError,
 } from "@/lib/api";
 import type { StandaloneInventoryItem as ApiItem } from "@/lib/api";
+import { SyncStatusPanel } from "@/components/admin/SyncStatusPanel";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -69,6 +70,8 @@ export interface InventoryItem {
     movements: StockMovement[];
     addedAt: string;
     updatedAt: string;
+    syncedAt: string | null;
+    syncStatus: string;
 }
 
 /** Convert API response to local InventoryItem shape */
@@ -84,6 +87,8 @@ function fromApiItem(item: ApiItem): InventoryItem {
         movements: [],
         addedAt: item.createdAt,
         updatedAt: item.updatedAt,
+        syncedAt: item.syncedAt,
+        syncStatus: item.syncStatus,
     };
 }
 
@@ -190,6 +195,8 @@ function parseFinstarCSV(text: string): InventoryItem[] {
             movements: [],
             addedAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
+            syncedAt: null,
+            syncStatus: "pending",
         });
     }
 
@@ -1245,6 +1252,9 @@ export default function InventoryPage() {
                 </div>
             </div>
 
+            {/* ── Google Sheets Sync Status ── */}
+            <SyncStatusPanel />
+
             {/* ── Stats ── */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <StatCard
@@ -1414,6 +1424,7 @@ export default function InventoryPage() {
                                 <th className={thSortCls} onClick={() => toggleSort("status")}>
                                     <span className="flex items-center">Status <SortIndicator field="status" /></span>
                                 </th>
+                                <th className={thCls}>Sync</th>
                                 <th className={`${thCls} text-right`}>Actions</th>
                             </tr>
                         </thead>
@@ -1518,6 +1529,26 @@ export default function InventoryPage() {
                                             {/* Status */}
                                             <td className="px-4 py-3 whitespace-nowrap">
                                                 <StatusBadge status={stockStatus} />
+                                            </td>
+
+                                            {/* Sync Status */}
+                                            <td className="px-4 py-3 whitespace-nowrap">
+                                                {item.syncStatus === 'success' ? (
+                                                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded" title={`Synced at ${item.syncedAt ? new Date(item.syncedAt).toLocaleString() : ''}`}>
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                        Synced
+                                                    </span>
+                                                ) : item.syncStatus === 'failed' || item.syncStatus === 'failure' ? (
+                                                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-2 py-0.5 rounded" title="Failed to sync">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>
+                                                        Failed
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+                                                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-pulse"></span>
+                                                        Pending
+                                                    </span>
+                                                )}
                                             </td>
 
                                             {/* Actions */}

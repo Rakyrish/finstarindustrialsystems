@@ -98,6 +98,36 @@ class InventoryItemViewSet(JWTAdminMixin, viewsets.ModelViewSet):
 
         return qs
 
+    def perform_create(self, serializer):
+        inventory_item = serializer.save()
+        if inventory_item.quantity_in_stock > 0:
+            StockMovement.objects.create(
+                inventory_item=inventory_item,
+                movement_type=StockMovement.MovementType.ADJUSTMENT,
+                quantity_delta=inventory_item.quantity_in_stock,
+                quantity_before=0,
+                quantity_after=inventory_item.quantity_in_stock,
+                notes="Initial quantity from inventory dashboard",
+                performed_by=self.request.user,
+            )
+
+    def perform_update(self, serializer):
+        inventory_item = serializer.instance
+        quantity_before = inventory_item.quantity_in_stock
+        updated_item = serializer.save()
+        quantity_after = updated_item.quantity_in_stock
+
+        if quantity_after != quantity_before:
+            StockMovement.objects.create(
+                inventory_item=updated_item,
+                movement_type=StockMovement.MovementType.ADJUSTMENT,
+                quantity_delta=quantity_after - quantity_before,
+                quantity_before=quantity_before,
+                quantity_after=quantity_after,
+                notes="Direct quantity edit from inventory dashboard",
+                performed_by=self.request.user,
+            )
+
     # ── POST /api/admin/inventory/{id}/adjust/ ────────────────────────────────
 
     @action(detail=True, methods=["post"], url_path="adjust")

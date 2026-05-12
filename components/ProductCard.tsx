@@ -81,6 +81,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                   sizes="(max-width: 640px) 50vw, (max-width: 1280px) 33vw, 25vw"
                   className="object-cover transition-transform duration-500 group-hover:scale-105"
                 />
+
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-slate-900/10 to-transparent" />
               <div className="absolute bottom-1 right-1">
@@ -131,7 +132,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       </Link>
 
       {/* Save button — absolute positioned, outside the Link */}
-      <div className="absolute right-2 top-[calc(theme(spacing.36)-1.25rem)] sm:top-[calc(theme(spacing.48)-1.25rem)] md:top-[calc(theme(spacing.56)-1.25rem)] z-10 opacity-0 transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100">
+      <div className="absolute left-2 top-[calc(theme(spacing.36)-1.25rem)] sm:top-[calc(theme(spacing.48)-1.25rem)] md:top-[calc(theme(spacing.46)-1.25rem)] z-10">
         <SaveButton product={product} variant="card" />
       </div>
     </article>
