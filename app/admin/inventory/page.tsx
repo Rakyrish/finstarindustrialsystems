@@ -1038,6 +1038,7 @@ export default function InventoryPage() {
                     cost_price: data.costPrice ?? 0,
                     sell_price: data.sellPrice ?? 0,
                     reorder_level: data.reorderLevel ?? 5,
+                    unit: "",
                 });
                 showToast("Item created successfully.");
 
