@@ -165,19 +165,19 @@ def _maybe_send_low_stock_alert(
 
     import threading
 
-    def _send():
-        try:
-            from .email_service import send_low_stock_alert
-            send_low_stock_alert(
-                item_name=name,
-                quantity=quantity,
-                reorder_level=reorder_level,
-                section=section,
-            )
-        except Exception as exc:
-            logger.error(
-                "Low-stock alert email FAILED for item_id=%s: %s",
-                item_id, exc, exc_info=True
-            )
+    # def _send():
+    #     try:
+    #         from .email_service import send_low_stock_alert
+    #         send_low_stock_alert(
+    #             item_name=name,
+    #             quantity=quantity,
+    #             reorder_level=reorder_level,
+    #             section=section,
+    #         )
+    #     except Exception as exc:
+    #         logger.error(
+    #             "Low-stock alert email FAILED for item_id=%s: %s",
+    #             item_id, exc, exc_info=True
+    #         )
 
-    threading.Thread(target=_send, daemon=True).start()
+    # threading.Thread(target=_send, daemon=True).start()

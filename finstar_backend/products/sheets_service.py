@@ -30,7 +30,7 @@ SHEET_HEADERS = [
 
 DATA_START_ROW = 2
 SKU_COL_INDEX = 1
-MAX_RETRIES = 3
+MAX_RETRIES = 5
 RETRY_BASE_DELAY = 2
 
 
@@ -136,6 +136,8 @@ class GoogleSheetsService:
     def __init__(self, service, spreadsheet_id: str):
         self._service = service
         self._spreadsheet_id = spreadsheet_id
+        self._verified_tabs = set()
+        self._sheet_ids = {}
 
     # ── Public helpers ────────────────────────────────────────────────────────
 
@@ -342,6 +344,9 @@ class GoogleSheetsService:
     # ── Internal helpers ───────────────────────────────────────────────────────
 
     def _ensure_tab_and_headers(self, tab_name: str):
+        if tab_name in self._verified_tabs:
+            return
+
         spreadsheet = self._retry(
             lambda: self._service.spreadsheets().get(
                 spreadsheetId=self._spreadsheet_id
@@ -428,6 +433,8 @@ class GoogleSheetsService:
         except Exception:
             logger.warning("Failed to format Google Sheets header row", exc_info=True)
 
+        self._verified_tabs.add(tab_name)
+
     def _get_all_rows(self, tab_name: str) -> list[list[str]]:
         result = self._retry(
             lambda: self._service.spreadsheets().values().get(
@@ -445,6 +452,9 @@ class GoogleSheetsService:
         return lookup
 
     def _get_sheet_id(self, tab_name: str, spreadsheet: Optional[dict] = None) -> int:
+        if tab_name in self._sheet_ids:
+            return self._sheet_ids[tab_name]
+
         spreadsheet = spreadsheet or self._retry(
             lambda: self._service.spreadsheets().get(
                 spreadsheetId=self._spreadsheet_id
@@ -452,8 +462,13 @@ class GoogleSheetsService:
         )
         for sheet in spreadsheet.get("sheets", []):
             properties = sheet.get("properties", {})
-            if properties.get("title") == tab_name:
-                return properties["sheetId"]
+            title = properties.get("title")
+            if title:
+                self._sheet_ids[title] = properties["sheetId"]
+
+        if tab_name in self._sheet_ids:
+            return self._sheet_ids[tab_name]
+
         raise ValueError(f"Google Sheets tab '{tab_name}' not found")
 
     @staticmethod
@@ -476,6 +491,9 @@ class GoogleSheetsService:
                 last_exc = exc
                 if attempt < max_retries - 1:
                     delay = RETRY_BASE_DELAY * (2 ** attempt)
+                    if "429" in str(exc) or "RATE_LIMIT_EXCEEDED" in str(exc) or "Quota exceeded" in str(exc):
+                        delay = 62
+                        
                     logger.warning(
                         "[Sheets] Google Sheets sync failed (attempt %s/%s) — retrying in %ss | error=%s | spreadsheet_id=%s",
                         attempt + 1,
