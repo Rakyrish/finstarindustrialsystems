@@ -71,8 +71,8 @@ services:
       ALLOWED_HOSTS: "finstarindustrials.com,www.finstarindustrials.com,backend,localhost"
       CORS_ALLOWED_ORIGINS: "https://finstarindustrials.com,https://www.finstarindustrials.com"
       CSRF_TRUSTED_ORIGINS: "https://finstarindustrials.com,https://www.finstarindustrials.com"
-    entrypoint: ["/bin/bash", "-lc"]
-    command: "python manage.py migrate --noinput && python manage.py run_inventory_sync_worker --sleep-seconds 5"
+    entrypoint: ["/bin/bash", "-c"]
+    command: ["python manage.py migrate --noinput && python manage.py run_inventory_sync_worker --sleep-seconds 5"]
     volumes:
       - backend-logs:/app/logs
     depends_on:
