@@ -79,7 +79,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   if (!category) {
     return {
       title: "Category Not Found",
-      robots: { index: false, follow: false },
+      // robots: { index: false, follow: false },
     };
   }
 

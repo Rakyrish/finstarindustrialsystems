@@ -58,7 +58,10 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
     return buildProductMetadata(product);
   } catch (error) {
     if (error instanceof APIError && error.status === 404) {
-      return { title: "Product Not Found", robots: { index: false, follow: false } };
+      return {
+        title: "Product Not Found",
+        // robots: { index: false, follow: false }
+      };
     }
     return {
       title: "Product Details",
