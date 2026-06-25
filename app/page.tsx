@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import EmptyState from "@/components/EmptyState";
 import FAQSection from "@/components/FAQSection";
 import { FAQJsonLd, ReviewAggregateJsonLd, ServicesJsonLd } from "@/components/JsonLd";
@@ -8,6 +9,8 @@ import SectionWrapper, { SectionHeader } from "@/components/SectionWrapper";
 import ClientsSection, { type Client } from "@/components/ClientsSection"
 import BrandsSection from "@/components/BrandSection";
 import ReviewsSection, { type GoogleReview } from "@/components/ReviewsSection";
+import ProductsClient from "./products/ProductsClient";
+import ProductCardSkeleton from "@/components/ProductCardSkeleton";
 import { getCategories, fetchAllProducts } from "@/lib/api";
 import { services } from "@/lib/data";
 import { buildPageMetadata, homepageFaqs, SITE_URL } from "@/lib/seo";
@@ -216,7 +219,26 @@ export default async function HomePage() {
           description="Our most popular industrial equipment, trusted by leading companies across East Africa."
         />
 
-        {featuredProducts.length > 0 ? (
+
+        {hasApiError ? (
+          <EmptyState
+            title="Failed to load products"
+            description="The product catalogue could not be reached. Check the API connection and try again."
+            icon="⚠️"
+            action={{ label: "Back Home", href: "/" }}
+          />
+        ) : (
+          <Suspense fallback={
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <ProductCardSkeleton key={i} />
+              ))}
+            </div>
+          }>
+            <ProductsClient initialProducts={featuredProducts} categories={categories} />
+          </Suspense>
+        )}
+        {/* {featuredProducts.length > 0 ? (
           <FeaturedProducts
             desktopRowLimit={8}
             featuredProducts={featuredProducts}
@@ -229,7 +251,7 @@ export default async function HomePage() {
             icon="🏭"
             action={{ label: "View Catalog", href: "/products" }}
           />
-        )}
+        )} */}
       </SectionWrapper>
 
       {/* ── 3. BRANDS ────────────────────────────────────────────────────────── */}
