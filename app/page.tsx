@@ -150,10 +150,10 @@ export default async function HomePage() {
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 py-20 text-center sm:px-6 lg:px-8 lg:py-28">
           {/* Trust pill */}
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-700/50 bg-blue-800/60 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-blue-200 backdrop-blur-sm">
+          {/* <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-700/50 bg-blue-800/60 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-blue-200 backdrop-blur-sm">
             <span className="h-2 w-2 animate-pulse rounded-full bg-orange-400" />
             Trusted by 500+ clients across East Africa
-          </div>
+          </div> */}
 
           <h1 className="mb-5 text-4xl font-extrabold leading-tight text-white sm:text-5xl lg:text-7xl">
             Industrial Equipment &{" "}
