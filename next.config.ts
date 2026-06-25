@@ -32,6 +32,7 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "res.cloudinary.com",
       },
+      { protocol: "https", hostname: "**" },
     ],
     // Modern formats for smaller payloads
     formats: ["image/avif", "image/webp"],
