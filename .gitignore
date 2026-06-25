@@ -72,3 +72,22 @@ Thumbs.db
 
 # ── Deployment ───────────────────────────────────────────────────────────────
 .vercel
+.env.save*
+nginx/nginx.conf.old
+nginx/wq:
+CACHED
+FETCH_HEAD
+exporting
+naming
+resolve
+transferring
+writing
+=
+[backend
+[backend]
+[frontend
+[frontend]
+[inventory-sync-worker
+[inventory-sync-worker]
+[nginx
+[nginx]
