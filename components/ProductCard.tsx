@@ -4,6 +4,7 @@ import { getCategoryIcon } from "@/lib/data";
 import { productImageAlt } from "@/lib/seo";
 import type { Product } from "@/types";
 import SaveButton from "./SaveButton";
+import ProtectedImage from "./ProtectedImage";
 
 interface ProductCardProps {
   product: Product;
@@ -63,7 +64,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                 <div className="grid h-full grid-cols-2 grid-rows-2 gap-1 p-1">
                   {imageGrid.map((imageUrl, index) => (
                     <div key={`${imageUrl}-${index}`} className="relative overflow-hidden rounded-xl">
-                      <Image
+                      <ProtectedImage
                         src={imageUrl}
                         alt={productImageAlt(product, `gallery view ${index + 1}`)}
                         fill
@@ -74,7 +75,7 @@ export default function ProductCard({ product }: ProductCardProps) {
                   ))}
                 </div>
               ) : (
-                <Image
+                <ProtectedImage
                   src={imageGrid[0]}
                   alt={productImageAlt(product)}
                   fill

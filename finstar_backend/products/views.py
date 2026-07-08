@@ -322,7 +322,7 @@ class ProductListView(generics.ListAPIView):
     pagination_class = ProductPagination
 
     def get_queryset(self):
-        queryset = Product.objects.select_related("category").filter(is_active=True)
+        queryset = Product.objects.select_related("category", "image_protection").filter(is_active=True)
 
         category_slug = self.request.query_params.get("category")
         if category_slug:
@@ -341,7 +341,7 @@ class ProductDetailView(generics.RetrieveAPIView):
     Retrieve a single active product by slug.
     """
     serializer_class = ProductSerializer
-    queryset = Product.objects.select_related("category").filter(is_active=True)
+    queryset = Product.objects.select_related("category", "image_protection").filter(is_active=True)
     lookup_field = "slug"
 
 

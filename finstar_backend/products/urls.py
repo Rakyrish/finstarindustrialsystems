@@ -8,6 +8,32 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from .inventory import InventoryItemViewSet, StockMovementListView
 from .standalone_inventory import StandaloneInventoryViewSet
+from .seo_views import (
+    SEOApplyDraftView,
+    SEOBulkBatchesView,
+    SEOBulkRetryFailedView,
+    SEOBulkStartView,
+    SEOBulkStatusView,
+    SEODashboardView,
+    SEOGenerateDraftView,
+    SEOProductDetailView,
+    SEORestoreVersionView,
+    SEOVersionListView,
+)
+from .watermark_views import (
+    ImageProtectionAuditLogListView,
+    ImageProtectionSettingsView,
+    PublicImageProtectionSettingsView,
+    WatermarkBulkBatchesView,
+    WatermarkBulkCancelView,
+    WatermarkBulkPauseView,
+    WatermarkBulkResumeView,
+    WatermarkBulkStartView,
+    WatermarkBulkStatusView,
+    WatermarkPreviewView,
+    WatermarkRestoreAllView,
+    WatermarkRestoreView,
+)
 from .views import (
     AIGenerateProductView,
     AdminCategoryDetailView,
@@ -67,6 +93,8 @@ urlpatterns = [
     path("products/<slug:slug>/", ProductDetailView.as_view()),
     path("inquiries", InquiryCreateView.as_view(), name="inquiry-create"),
     path("inquiries/", InquiryCreateView.as_view()),
+    path("settings/image-protection", PublicImageProtectionSettingsView.as_view(), name="public-image-protection-settings"),
+    path("settings/image-protection/", PublicImageProtectionSettingsView.as_view()),
 
     # --- Admin dashboard ---
     path("admin/dashboard/overview", AdminDashboardOverviewView.as_view(), name="admin-dashboard-overview"),
@@ -115,6 +143,56 @@ urlpatterns = [
     # Retry failed — resets all FAILED jobs back to PENDING
     path("admin/sheets/retry-failed", AdminSheetsRetryFailedView.as_view(), name="admin-sheets-retry-failed"),
     path("admin/sheets/retry-failed/", AdminSheetsRetryFailedView.as_view()),
+
+    # --- Admin: AI SEO Optimizer (Phase 1: single-product pipeline) ---
+    path("admin/seo/dashboard", SEODashboardView.as_view(), name="admin-seo-dashboard"),
+    path("admin/seo/dashboard/", SEODashboardView.as_view()),
+    path("admin/seo/products/<int:product_id>", SEOProductDetailView.as_view(), name="admin-seo-product-detail"),
+    path("admin/seo/products/<int:product_id>/", SEOProductDetailView.as_view()),
+    path("admin/seo/products/<int:product_id>/generate", SEOGenerateDraftView.as_view(), name="admin-seo-generate"),
+    path("admin/seo/products/<int:product_id>/generate/", SEOGenerateDraftView.as_view()),
+    path("admin/seo/products/<int:product_id>/apply", SEOApplyDraftView.as_view(), name="admin-seo-apply"),
+    path("admin/seo/products/<int:product_id>/apply/", SEOApplyDraftView.as_view()),
+    path("admin/seo/products/<int:product_id>/versions", SEOVersionListView.as_view(), name="admin-seo-versions"),
+    path("admin/seo/products/<int:product_id>/versions/", SEOVersionListView.as_view()),
+    path("admin/seo/products/<int:product_id>/versions/<int:version_id>/restore", SEORestoreVersionView.as_view(), name="admin-seo-restore"),
+    path("admin/seo/products/<int:product_id>/versions/<int:version_id>/restore/", SEORestoreVersionView.as_view()),
+
+    # --- Admin: AI SEO Optimizer (Phase 2: bulk regeneration queue) ---
+    path("admin/seo/bulk/start", SEOBulkStartView.as_view(), name="admin-seo-bulk-start"),
+    path("admin/seo/bulk/start/", SEOBulkStartView.as_view()),
+    path("admin/seo/bulk/status", SEOBulkStatusView.as_view(), name="admin-seo-bulk-status"),
+    path("admin/seo/bulk/status/", SEOBulkStatusView.as_view()),
+    path("admin/seo/bulk/batches", SEOBulkBatchesView.as_view(), name="admin-seo-bulk-batches"),
+    path("admin/seo/bulk/batches/", SEOBulkBatchesView.as_view()),
+    path("admin/seo/bulk/retry-failed", SEOBulkRetryFailedView.as_view(), name="admin-seo-bulk-retry-failed"),
+    path("admin/seo/bulk/retry-failed/", SEOBulkRetryFailedView.as_view()),
+
+    # --- Admin: Image Protection Settings (Feature 1 & 9) ---
+    path("admin/image-protection/settings", ImageProtectionSettingsView.as_view(), name="admin-image-protection-settings"),
+    path("admin/image-protection/settings/", ImageProtectionSettingsView.as_view()),
+    path("admin/image-protection/audit-logs", ImageProtectionAuditLogListView.as_view(), name="admin-image-protection-audit-logs"),
+    path("admin/image-protection/audit-logs/", ImageProtectionAuditLogListView.as_view()),
+
+    # --- Admin: Watermark Management (Features 2, 3, 9, 10, 12) ---
+    path("admin/watermark/preview", WatermarkPreviewView.as_view(), name="admin-watermark-preview"),
+    path("admin/watermark/preview/", WatermarkPreviewView.as_view()),
+    path("admin/watermark/bulk/start", WatermarkBulkStartView.as_view(), name="admin-watermark-bulk-start"),
+    path("admin/watermark/bulk/start/", WatermarkBulkStartView.as_view()),
+    path("admin/watermark/bulk/status", WatermarkBulkStatusView.as_view(), name="admin-watermark-bulk-status"),
+    path("admin/watermark/bulk/status/", WatermarkBulkStatusView.as_view()),
+    path("admin/watermark/bulk/batches", WatermarkBulkBatchesView.as_view(), name="admin-watermark-bulk-batches"),
+    path("admin/watermark/bulk/batches/", WatermarkBulkBatchesView.as_view()),
+    path("admin/watermark/bulk/pause", WatermarkBulkPauseView.as_view(), name="admin-watermark-bulk-pause"),
+    path("admin/watermark/bulk/pause/", WatermarkBulkPauseView.as_view()),
+    path("admin/watermark/bulk/resume", WatermarkBulkResumeView.as_view(), name="admin-watermark-bulk-resume"),
+    path("admin/watermark/bulk/resume/", WatermarkBulkResumeView.as_view()),
+    path("admin/watermark/bulk/cancel", WatermarkBulkCancelView.as_view(), name="admin-watermark-bulk-cancel"),
+    path("admin/watermark/bulk/cancel/", WatermarkBulkCancelView.as_view()),
+    path("admin/watermark/restore", WatermarkRestoreView.as_view(), name="admin-watermark-restore"),
+    path("admin/watermark/restore/", WatermarkRestoreView.as_view()),
+    path("admin/watermark/restore-all", WatermarkRestoreAllView.as_view(), name="admin-watermark-restore-all"),
+    path("admin/watermark/restore-all/", WatermarkRestoreAllView.as_view()),
 
     # --- Google Sheets → Website webhook (called by Google Apps Script) ---
     # No auth/CSRF — protected by X-Sheets-Webhook-Secret header

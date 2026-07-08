@@ -7,13 +7,19 @@ from urllib.parse import urlparse
 from rest_framework import serializers
 from .models import (
     Category,
+    ImageProtectionAuditLog,
+    ImageProtectionSettings,
     Inquiry,
     InventoryItem,
     Product,
+    ProductImageProtection,
+    ProductSEO,
+    SEOVersion,
     StandaloneInventoryItem,
     StandaloneInventoryMovement,
     StockMovement,
 )
+from .watermark_service import get_effective_image_url
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -39,6 +45,7 @@ class ProductSerializer(serializers.ModelSerializer):
     """Serializers for Product with nested category data."""
 
     category = CategorySerializer(read_only=True)
+    image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -57,11 +64,16 @@ class ProductSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+    def get_image_url(self, obj):
+        """Returns the watermarked URL when protection is enabled + applied, else the original."""
+        return get_effective_image_url(obj)
+
 
 class ProductListSerializer(serializers.ModelSerializer):
     """Lighter serializer for product list view (omits full description)."""
 
     category = CategorySerializer(read_only=True)
+    image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -76,6 +88,9 @@ class ProductListSerializer(serializers.ModelSerializer):
             "featured",
             "created_at",
         ]
+
+    def get_image_url(self, obj):
+        return get_effective_image_url(obj)
 
 
 class AdminCategorySerializer(CategorySerializer):
@@ -90,6 +105,7 @@ class AdminProductSerializer(serializers.ModelSerializer):
         source="category",
         write_only=True,
     )
+    watermark_applied = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -102,6 +118,7 @@ class AdminProductSerializer(serializers.ModelSerializer):
             "category",
             "category_id",
             "image_url",
+            "watermark_applied",
             "is_active",
             "featured",
             "specs",
@@ -109,6 +126,12 @@ class AdminProductSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at", "category"]
+
+    def get_watermark_applied(self, obj):
+        try:
+            return obj.image_protection.is_watermark_applied
+        except ProductImageProtection.DoesNotExist:
+            return False
         extra_kwargs = {
             "slug": {"required": False, "allow_blank": True},
             "short_description": {"required": False},
@@ -305,6 +328,111 @@ class StandaloneInventoryMovementSerializer(serializers.ModelSerializer):
             "quantity_after",
             "notes",
             "performed_by_username",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
+# ── SEO ─────────────────────────────────────────────────────────────────────
+
+class SEOProductSummarySerializer(serializers.ModelSerializer):
+    """Minimal, read-only product context for the SEO Optimizer workspace."""
+
+    category = CategorySerializer(read_only=True)
+
+    class Meta:
+        model = Product
+        fields = ["id", "name", "slug", "image_url", "category"]
+        read_only_fields = fields
+
+
+class SEOVersionSerializer(serializers.ModelSerializer):
+    created_by_username = serializers.CharField(
+        source="created_by.username", read_only=True, default=None
+    )
+    score_overall_at_snapshot = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SEOVersion
+        fields = [
+            "id",
+            "version_number",
+            "reason",
+            "created_by_username",
+            "created_at",
+            "score_overall_at_snapshot",
+        ]
+        read_only_fields = fields
+
+    def get_score_overall_at_snapshot(self, obj):
+        return (obj.snapshot or {}).get("score_overall", 0)
+
+
+# ── Image Protection & Watermark Management ───────────────────────────────
+
+class ImageProtectionSettingsSerializer(serializers.ModelSerializer):
+    updated_by_username = serializers.CharField(
+        source="updated_by.username", read_only=True, default=None
+    )
+
+    class Meta:
+        model = ImageProtectionSettings
+        fields = [
+            "watermark_enabled",
+            "right_click_protection_enabled",
+            "drag_protection_enabled",
+            "long_press_protection_enabled",
+            "seo_metadata_protection_enabled",
+            "watermark_text",
+            "watermark_secondary_text",
+            "watermark_opacity",
+            "watermark_font_size",
+            "watermark_angle",
+            "watermark_position",
+            "updated_at",
+            "updated_by_username",
+        ]
+        read_only_fields = ["updated_at", "updated_by_username"]
+
+    def validate_watermark_opacity(self, value):
+        if not (1 <= value <= 100):
+            raise serializers.ValidationError("Opacity must be between 1 and 100.")
+        return value
+
+    def validate_watermark_angle(self, value):
+        if not (-90 <= value <= 90):
+            raise serializers.ValidationError("Angle must be between -90 and 90.")
+        return value
+
+
+class PublicImageProtectionSettingsSerializer(serializers.ModelSerializer):
+    """Only the toggles the public site needs to know about — no watermark design details."""
+
+    class Meta:
+        model = ImageProtectionSettings
+        fields = [
+            "watermark_enabled",
+            "right_click_protection_enabled",
+            "drag_protection_enabled",
+            "long_press_protection_enabled",
+        ]
+
+
+class ImageProtectionAuditLogSerializer(serializers.ModelSerializer):
+    user_username = serializers.CharField(source="user.username", read_only=True, default=None)
+    action_display = serializers.CharField(source="get_action_display", read_only=True)
+    product_name = serializers.CharField(source="product.name", read_only=True, default=None)
+
+    class Meta:
+        model = ImageProtectionAuditLog
+        fields = [
+            "id",
+            "user_username",
+            "action",
+            "action_display",
+            "product_id",
+            "product_name",
+            "details",
             "created_at",
         ]
         read_only_fields = fields

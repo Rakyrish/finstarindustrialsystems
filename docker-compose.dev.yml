@@ -15,7 +15,7 @@
 services:
   db:
     ports:
-      - "5433:5432"
+      - "5434:5432"
 
   backend:
     build:
@@ -53,6 +53,50 @@ services:
       CSRF_TRUSTED_ORIGINS: "http://localhost:3000"
     entrypoint: ["/bin/bash", "-lc"]
     command: "python manage.py migrate --noinput && python manage.py run_inventory_sync_worker --sleep-seconds 2"
+    volumes:
+      - ./finstar_backend:/app
+      - /app/__pycache__
+      - backend-logs:/app/logs
+    user: root
+    depends_on:
+      db:
+        condition: service_healthy
+
+  seo-regeneration-worker:
+    build:
+      context: ./finstar_backend
+      dockerfile: Dockerfile
+    environment:
+      DEBUG: "True"
+      DB_HOST: db
+      DB_PORT: 5432
+      ALLOWED_HOSTS: "localhost,127.0.0.1,backend,0.0.0.0"
+      CORS_ALLOWED_ORIGINS: "http://localhost:3000"
+      CSRF_TRUSTED_ORIGINS: "http://localhost:3000"
+    entrypoint: ["/bin/bash", "-lc"]
+    command: "python manage.py migrate --noinput && python manage.py run_seo_regeneration_worker --sleep-seconds 5"
+    volumes:
+      - ./finstar_backend:/app
+      - /app/__pycache__
+      - backend-logs:/app/logs
+    user: root
+    depends_on:
+      db:
+        condition: service_healthy
+
+  watermark-worker:
+    build:
+      context: ./finstar_backend
+      dockerfile: Dockerfile
+    environment:
+      DEBUG: "True"
+      DB_HOST: db
+      DB_PORT: 5432
+      ALLOWED_HOSTS: "localhost,127.0.0.1,backend,0.0.0.0"
+      CORS_ALLOWED_ORIGINS: "http://localhost:3000"
+      CSRF_TRUSTED_ORIGINS: "http://localhost:3000"
+    entrypoint: ["/bin/bash", "-lc"]
+    command: "python manage.py migrate --noinput && python manage.py run_watermark_worker --sleep-seconds 5"
     volumes:
       - ./finstar_backend:/app
       - /app/__pycache__

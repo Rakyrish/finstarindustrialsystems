@@ -6,7 +6,9 @@ from django.contrib import admin
 from .models import (
     Category, Product, Inquiry, InventoryItem,
     StandaloneInventoryItem, StandaloneInventoryMovement,
-    SyncLog, InventorySyncJob,
+    SyncLog, InventorySyncJob, ProductSEO, SEOVersion, SEORegenerationJob,
+    ImageProtectionAuditLog, ImageProtectionSettings, ProductImageProtection,
+    WatermarkBulkControl, WatermarkJob,
 )
 
 
@@ -255,4 +257,125 @@ class InventorySyncJobAdmin(admin.ModelAdmin):
     ordering = ["created_at"]
 
     def has_add_permission(self, request):
+        return False
+
+
+# ── AI SEO Optimizer ──────────────────────────────────────────────────────────
+
+@admin.register(ProductSEO)
+class ProductSEOAdmin(admin.ModelAdmin):
+    list_display = [
+        "product", "score_overall", "is_optimized",
+        "published_at", "generated_at",
+    ]
+    list_filter = ["is_optimized"]
+    search_fields = ["product__name", "seo_title", "focus_keyword"]
+    readonly_fields = [f.name for f in ProductSEO._meta.fields if f.name != "id"]
+    ordering = ["-updated_at"]
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(SEOVersion)
+class SEOVersionAdmin(admin.ModelAdmin):
+    list_display = ["product", "version_number", "reason", "created_by", "created_at"]
+    list_filter = ["reason"]
+    search_fields = ["product__name"]
+    readonly_fields = [f.name for f in SEOVersion._meta.fields if f.name != "id"]
+    ordering = ["-created_at"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(SEORegenerationJob)
+class SEORegenerationJobAdmin(admin.ModelAdmin):
+    list_display = [
+        "id", "product", "batch_id", "status",
+        "attempts", "result_score", "requested_by", "created_at",
+    ]
+    list_filter = ["status"]
+    search_fields = ["product__name", "batch_id", "last_error"]
+    readonly_fields = [f.name for f in SEORegenerationJob._meta.fields if f.name != "id"]
+    ordering = ["-created_at"]
+
+    def has_add_permission(self, request):
+        return False
+
+
+# ── Image Protection & Watermark Management ───────────────────────────────────
+# Ops visibility only — real control is via the /admin/image-protection and
+# /admin/watermark dashboard pages.
+
+@admin.register(ImageProtectionSettings)
+class ImageProtectionSettingsAdmin(admin.ModelAdmin):
+    list_display = [
+        "watermark_enabled", "right_click_protection_enabled",
+        "drag_protection_enabled", "long_press_protection_enabled",
+        "updated_by", "updated_at",
+    ]
+    readonly_fields = [f.name for f in ImageProtectionSettings._meta.fields if f.name != "id"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ProductImageProtection)
+class ProductImageProtectionAdmin(admin.ModelAdmin):
+    list_display = ["product", "is_watermark_applied", "watermark_applied_at", "last_restored_at"]
+    list_filter = ["is_watermark_applied"]
+    search_fields = ["product__name"]
+    readonly_fields = [f.name for f in ProductImageProtection._meta.fields if f.name != "id"]
+    ordering = ["-updated_at"]
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(WatermarkJob)
+class WatermarkJobAdmin(admin.ModelAdmin):
+    list_display = [
+        "id", "product", "batch_id", "status",
+        "attempts", "requested_by", "created_at",
+    ]
+    list_filter = ["status"]
+    search_fields = ["product__name", "batch_id", "last_error"]
+    readonly_fields = [f.name for f in WatermarkJob._meta.fields if f.name != "id"]
+    ordering = ["-created_at"]
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(WatermarkBulkControl)
+class WatermarkBulkControlAdmin(admin.ModelAdmin):
+    list_display = ["batch_id", "is_paused", "is_cancelled", "created_at", "updated_at"]
+    list_filter = ["is_paused", "is_cancelled"]
+    search_fields = ["batch_id"]
+    readonly_fields = [f.name for f in WatermarkBulkControl._meta.fields if f.name != "id"]
+    ordering = ["-created_at"]
+
+    def has_add_permission(self, request):
+        return False
+
+
+@admin.register(ImageProtectionAuditLog)
+class ImageProtectionAuditLogAdmin(admin.ModelAdmin):
+    list_display = ["action", "product", "user", "created_at"]
+    list_filter = ["action"]
+    search_fields = ["product__name", "user__username"]
+    readonly_fields = [f.name for f in ImageProtectionAuditLog._meta.fields if f.name != "id"]
+    ordering = ["-created_at"]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
         return False

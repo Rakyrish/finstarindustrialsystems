@@ -20,7 +20,8 @@ import {
 } from "@/lib/seo";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import SupportWidgetWrapper from "@/components/SupportWidgetWrapper";
-import { fetchAllProducts } from "@/lib/api";
+import { ImageProtectionProvider } from "@/components/ImageProtectionProvider";
+import { fetchAllProducts, getPublicImageProtectionSettings } from "@/lib/api";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -72,6 +73,7 @@ export default async function RootLayout({
 }>) {
   // Fetch products for global search — gracefully handle API unavailability
   const products = await fetchAllProducts().catch(() => []);
+  const imageProtectionSettings = await getPublicImageProtectionSettings().catch(() => null);
 
   return (
     <html lang="en-KE" className={inter.variable} suppressHydrationWarning data-scroll-behavior="smooth">
@@ -86,19 +88,21 @@ export default async function RootLayout({
       </head>
       <body className={`min-h-screen flex flex-col antialiased ${inter.variable}`} suppressHydrationWarning>
         <ThemeProvider>
-          <SeoGraphJsonLd>
-            <OrganizationJsonLd />
-            <LocalBusinessJsonLd />
-            <WebsiteJsonLd />
-            <SpeakableWebsiteJsonLd />
-            <BusinessFactsJsonLd />
-          </SeoGraphJsonLd>
-          <Navbar products={products} />
-          <main className="flex-1 pt-20 lg:pt-24">
-            {children}
-          </main>
-          <Footer />
-          <SupportWidgetWrapper />
+          <ImageProtectionProvider settings={imageProtectionSettings}>
+            <SeoGraphJsonLd>
+              <OrganizationJsonLd />
+              <LocalBusinessJsonLd />
+              <WebsiteJsonLd />
+              <SpeakableWebsiteJsonLd />
+              <BusinessFactsJsonLd />
+            </SeoGraphJsonLd>
+            <Navbar products={products} />
+            <main className="flex-1 pt-20 lg:pt-24">
+              {children}
+            </main>
+            <Footer />
+            <SupportWidgetWrapper />
+          </ImageProtectionProvider>
         </ThemeProvider>
       </body>
     </html>

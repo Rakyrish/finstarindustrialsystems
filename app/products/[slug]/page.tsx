@@ -11,6 +11,7 @@ import {
 } from "@/components/JsonLd";
 import ProductCard from "@/components/ProductCard";
 import ProductDescription from "@/components/ProductDescription";
+import ProtectedImage from "@/components/ProtectedImage";
 import { APIError, fetchAllProducts, getProductBySlug, getProducts, isAPIError } from "@/lib/api";
 import { getCategoryIcon } from "@/lib/data";
 import {
@@ -111,7 +112,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:gap-16">
           <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 shadow-lg dark:from-slate-800 dark:to-slate-900 lg:min-h-[400px]">
             {product.imageUrl ? (
-              <Image
+              <ProtectedImage
                 src={product.imageUrl}
                 alt={productImageAlt(product)}
                 fill

@@ -47,6 +47,7 @@ export interface ApiProduct {
   category: ApiCategory;
   image_url: string;
   image_urls?: string[];
+  watermark_applied?: boolean;
   is_active: boolean;
   featured: boolean;
   specs: Record<string, string> | null;
@@ -952,6 +953,412 @@ export async function generateProductWithAI({
       image_url: image,
       ...(referenceUrl ? { reference_url: referenceUrl } : {}),
     }),
+  });
+}
+
+// ── Admin API: SEO Optimizer (Phase 1: single-product pipeline) ────────────────
+
+export interface ApiSeoFaq {
+  question: string;
+  answer: string;
+}
+
+export interface ApiSeoInternalLink {
+  anchor_text: string;
+  url: string;
+}
+
+export interface ApiSeoContent {
+  seo_title: string;
+  meta_description: string;
+  focus_keyword: string;
+  secondary_keywords: string[];
+  long_tail_keywords: string[];
+  introduction: string;
+  features: string[];
+  benefits: string[];
+  technical_specifications: Record<string, string>;
+  applications: string[];
+  industries_served: string[];
+  delivery_locations: string[];
+  faqs: ApiSeoFaq[];
+  cta_text: string;
+  internal_links: ApiSeoInternalLink[];
+  product_schema: Record<string, unknown>;
+  faq_schema: Record<string, unknown>;
+  breadcrumb_schema: Record<string, unknown>;
+  organization_schema: Record<string, unknown>;
+  image_seo_filename: string;
+  image_alt_text: string;
+  image_title: string;
+  image_caption: string;
+  image_description: string;
+}
+
+export interface ApiSeoScore {
+  overall: number;
+  breakdown: Record<string, number>;
+  is_optimized: boolean;
+  issues: Array<{
+    id: string;
+    name: string;
+    severity: 'high' | 'medium' | 'low' | 'info';
+    current_value: string;
+    recommended_value: string;
+    seo_impact: string;
+    explanation: string;
+    recommended_fix: string;
+    auto_fixable: boolean;
+  }>;
+}
+
+export interface ApiProductSeoDetail {
+  product: {
+    id: number;
+    name: string;
+    slug: string;
+    image_url: string;
+    category: ApiCategory;
+  };
+  live: ApiSeoContent | null;
+  draft: ApiSeoContent | null;
+  live_score: ApiSeoScore | null;
+  draft_score: ApiSeoScore | null;
+  has_pending_draft: boolean;
+  published_at: string | null;
+  generated_at: string | null;
+}
+
+export interface ApiSeoVersion {
+  id: number;
+  version_number: number;
+  reason: "pre_apply" | "pre_restore";
+  created_by_username: string | null;
+  created_at: string;
+  score_overall_at_snapshot: number;
+}
+
+export interface ApiSeoDashboard {
+  total_products: number;
+  products_with_seo: number;
+  products_never_generated: number;
+  average_score: number;
+  optimized_count: number;
+  score_distribution: Record<string, number>;
+  dimension_averages: Record<string, number>;
+  top_products: { product_id: number; product__name: string; score_overall: number }[];
+  lowest_products: { product_id: number; product__name: string; score_overall: number }[];
+  recently_generated: {
+    product_id: number;
+    product__name: string;
+    generated_at: string;
+    score_overall: number;
+    published_at: string | null;
+  }[];
+  // Issue statistics
+  issue_counts: Record<string, number>;
+  top_issues: { issue_id: string; issue_name: string; count: number }[];
+  issue_severity_distribution: Record<string, number>;
+}
+
+export async function getProductSeo(productId: number) {
+  return authFetchAPI<ApiProductSeoDetail>(`/admin/seo/products/${productId}`, {
+    next: { revalidate: 0 },
+  });
+}
+
+export async function generateProductSeoDraft(productId: number) {
+  return authFetchAPI<{ draft: ApiSeoContent; score: ApiSeoScore; generated_at: string }>(
+    `/admin/seo/products/${productId}/generate`,
+    { method: "POST" },
+  );
+}
+
+export async function applyProductSeoDraft(productId: number) {
+  return authFetchAPI<{
+    detail: string;
+    live: ApiSeoContent;
+    live_score: ApiSeoScore;
+    version_created: boolean;
+    version_id: number | null;
+  }>(`/admin/seo/products/${productId}/apply`, { method: "POST" });
+}
+
+export async function getProductSeoVersions(productId: number) {
+  return authFetchAPI<ApiSeoVersion[]>(`/admin/seo/products/${productId}/versions`, {
+    next: { revalidate: 0 },
+  });
+}
+
+export async function restoreProductSeoVersion(productId: number, versionId: number) {
+  return authFetchAPI<{ detail: string; live: ApiSeoContent; live_score: ApiSeoScore }>(
+    `/admin/seo/products/${productId}/versions/${versionId}/restore`,
+    { method: "POST" },
+  );
+}
+
+export async function getSeoDashboard() {
+  return authFetchAPI<ApiSeoDashboard>("/admin/seo/dashboard", { next: { revalidate: 0 } });
+}
+
+// ── Admin API: SEO Optimizer — bulk regeneration (Phase 2) ─────────────────────
+
+export type SeoBulkScope = "all" | "category" | "never_generated" | "low_score";
+
+export interface ApiSeoBulkStartResponse {
+  batch_id: string;
+  queued_count: number;
+  skipped_count: number;
+  total_matched: number;
+}
+
+export interface ApiSeoBulkJobSummary {
+  product_id: number;
+  product__name: string;
+  status: "pending" | "processing" | "completed" | "failed";
+  result_score: number | null;
+  last_error: string;
+  completed_at: string | null;
+}
+
+export interface ApiSeoBulkStatus {
+  batch_id: string | null;
+  total: number;
+  pending: number;
+  processing: number;
+  completed: number;
+  failed: number;
+  percent_complete: number;
+  is_running: boolean;
+  started_at: string | null;
+  recent: ApiSeoBulkJobSummary[];
+}
+
+export interface ApiSeoBulkBatch {
+  batch_id: string;
+  total: number;
+  pending: number;
+  processing: number;
+  completed: number;
+  failed: number;
+  started_at: string;
+  last_activity_at: string;
+}
+
+export async function startSeoBulkRegeneration(payload: { scope: SeoBulkScope; category_id?: number }) {
+  return authFetchAPI<ApiSeoBulkStartResponse>("/admin/seo/bulk/start", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getSeoBulkStatus(batchId?: string) {
+  const query = batchId ? `?batch_id=${encodeURIComponent(batchId)}` : "";
+  return authFetchAPI<ApiSeoBulkStatus>(`/admin/seo/bulk/status${query}`, { next: { revalidate: 0 } });
+}
+
+export async function getSeoBulkBatches() {
+  return authFetchAPI<ApiSeoBulkBatch[]>("/admin/seo/bulk/batches", { next: { revalidate: 0 } });
+}
+
+export async function retrySeoBulkFailed(batchId?: string) {
+  return authFetchAPI<{ detail: string; retried: number }>("/admin/seo/bulk/retry-failed", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(batchId ? { batch_id: batchId } : {}),
+  });
+}
+
+// ── Admin API: Image Protection & Watermark Management ─────────────────────────
+
+export interface ApiImageProtectionSettings {
+  watermark_enabled: boolean;
+  right_click_protection_enabled: boolean;
+  drag_protection_enabled: boolean;
+  long_press_protection_enabled: boolean;
+  seo_metadata_protection_enabled: boolean;
+  watermark_text: string;
+  watermark_secondary_text: string;
+  watermark_opacity: number;
+  watermark_font_size: number;
+  watermark_angle: number;
+  watermark_position: "center" | "tiled";
+  updated_at: string;
+  updated_by_username: string | null;
+}
+
+export interface ApiPublicImageProtectionSettings {
+  watermark_enabled: boolean;
+  right_click_protection_enabled: boolean;
+  drag_protection_enabled: boolean;
+  long_press_protection_enabled: boolean;
+}
+
+export async function getImageProtectionSettings() {
+  return authFetchAPI<ApiImageProtectionSettings>("/admin/image-protection/settings", {
+    next: { revalidate: 0 },
+  });
+}
+
+export async function updateImageProtectionSettings(payload: Partial<ApiImageProtectionSettings>) {
+  return authFetchAPI<ApiImageProtectionSettings>("/admin/image-protection/settings", {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Public, unauthenticated — fetched server-side in the root layout. */
+export async function getPublicImageProtectionSettings() {
+  return fetchAPI<ApiPublicImageProtectionSettings>("/settings/image-protection", {
+    next: { revalidate: 60 },
+  });
+}
+
+export interface ApiImageProtectionAuditLogEntry {
+  id: number;
+  user_username: string | null;
+  action: string;
+  action_display: string;
+  product_id: number | null;
+  product_name: string | null;
+  details: Record<string, unknown>;
+  created_at: string;
+}
+
+export async function getImageProtectionAuditLogs(limit = 100) {
+  return authFetchAPI<ApiImageProtectionAuditLogEntry[]>(
+    `/admin/image-protection/audit-logs?limit=${limit}`,
+    { next: { revalidate: 0 } },
+  );
+}
+
+export interface ApiWatermarkPreviewOverrides {
+  watermark_text?: string;
+  watermark_secondary_text?: string;
+  watermark_opacity?: number;
+  watermark_font_size?: number;
+  watermark_angle?: number;
+  watermark_position?: "center" | "tiled";
+  product_id?: number;
+}
+
+export async function generateWatermarkPreview(overrides: ApiWatermarkPreviewOverrides = {}) {
+  return authFetchAPI<{ preview_url: string; product_id: number; product_name: string }>(
+    "/admin/watermark/preview",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(overrides),
+    },
+  );
+}
+
+export type WatermarkBulkScope = "all" | "category" | "never_watermarked";
+
+export interface ApiWatermarkBulkStartResponse {
+  batch_id: string;
+  queued_count: number;
+  skipped_count: number;
+  total_matched: number;
+}
+
+export interface ApiWatermarkBulkJobSummary {
+  product_id: number;
+  product__name: string;
+  status: "pending" | "processing" | "completed" | "failed" | "cancelled";
+  last_error: string;
+  completed_at: string | null;
+}
+
+export interface ApiWatermarkBulkStatus {
+  batch_id: string | null;
+  total: number;
+  pending: number;
+  processing: number;
+  completed: number;
+  failed: number;
+  cancelled: number;
+  percent_complete: number;
+  is_running: boolean;
+  is_paused: boolean;
+  is_cancelled: boolean;
+  started_at: string | null;
+  eta_seconds: number | null;
+  recent: ApiWatermarkBulkJobSummary[];
+}
+
+export interface ApiWatermarkBulkBatch {
+  batch_id: string;
+  total: number;
+  pending: number;
+  processing: number;
+  completed: number;
+  failed: number;
+  cancelled: number;
+  started_at: string;
+  last_activity_at: string;
+}
+
+export async function startWatermarkBulk(payload: { scope: WatermarkBulkScope; category_id?: number }) {
+  return authFetchAPI<ApiWatermarkBulkStartResponse>("/admin/watermark/bulk/start", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getWatermarkBulkStatus(batchId?: string) {
+  const query = batchId ? `?batch_id=${encodeURIComponent(batchId)}` : "";
+  return authFetchAPI<ApiWatermarkBulkStatus>(`/admin/watermark/bulk/status${query}`, {
+    next: { revalidate: 0 },
+  });
+}
+
+export async function getWatermarkBulkBatches() {
+  return authFetchAPI<ApiWatermarkBulkBatch[]>("/admin/watermark/bulk/batches", {
+    next: { revalidate: 0 },
+  });
+}
+
+export async function pauseWatermarkBulk(batchId: string) {
+  return authFetchAPI<ApiWatermarkBulkStatus>("/admin/watermark/bulk/pause", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ batch_id: batchId }),
+  });
+}
+
+export async function resumeWatermarkBulk(batchId: string) {
+  return authFetchAPI<ApiWatermarkBulkStatus>("/admin/watermark/bulk/resume", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ batch_id: batchId }),
+  });
+}
+
+export async function cancelWatermarkBulk(batchId: string) {
+  return authFetchAPI<ApiWatermarkBulkStatus>("/admin/watermark/bulk/cancel", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ batch_id: batchId }),
+  });
+}
+
+export async function restoreProductWatermark(productId: number) {
+  return authFetchAPI<{ detail: string }>("/admin/watermark/restore", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ product_id: productId }),
+  });
+}
+
+export async function restoreAllWatermarks() {
+  return authFetchAPI<{ detail: string; restored_count: number }>("/admin/watermark/restore-all", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ confirm: true }),
   });
 }
 

@@ -47,6 +47,26 @@ const ChatBotNavIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2" /><path d="M20 14h2" /><path d="M15 13v2" /><path d="M9 13v2" /></svg>
 );
 
+const SeoOptimizerIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /><path d="M11 8v3l2 2" /></svg>
+);
+
+const SeoDashboardIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18" /><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" /></svg>
+);
+
+const SeoBulkIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /></svg>
+);
+
+const ImageProtectionIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" /></svg>
+);
+
+const WatermarkIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="m8 16 4-8 4 8" /><path d="M9.5 13h5" /></svg>
+);
+
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isHydrated, logout, session } = useAuth();
   const pathname = usePathname();
@@ -92,8 +112,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     { name: "Inquiries", href: "/admin/inquiries", icon: MessageIcon },
     { name: "Chatbot", href: "/admin/chatbot", icon: ChatBotNavIcon },
     { name: "Monitoring", href: "/admin/monitoring", icon: ActivityIcon },
-
-
+    { name: "SEO Optimizer", href: "/admin/seo", icon: SeoOptimizerIcon },
+    { name: "Bulk Regenerate SEO", href: "/admin/seo-bulk", icon: SeoBulkIcon },
+    { name: "SEO Dashboard", href: "/admin/seo-dashboard", icon: SeoDashboardIcon },
+    { name: "Image Protection", href: "/admin/image-protection", icon: ImageProtectionIcon },
+    { name: "Watermark Management", href: "/admin/watermark", icon: WatermarkIcon },
   ];
 
   const sidebarContent = (
