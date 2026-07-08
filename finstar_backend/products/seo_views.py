@@ -255,9 +255,9 @@ class SEODashboardView(JWTAdminMixin, APIView):
         latest_seo_update = seo_rows.order_by('-updated_at').first()
         last_updated = latest_seo_update.updated_at.isoformat() if latest_seo_update else None
 
-        # Crawl date placeholder (would need to be tracked separately)
-        # For now, we'll use the same as last updated or indicate it's not tracked
-        crawl_date = last_updated  # In a real implementation, this would be separate
+        # Crawl date (most recent crawl)
+        latest_crawled = seo_rows.exclude(last_crawled__isnull=True).order_by('-last_crawled').first()
+        crawl_date = latest_crawled.last_crawled.isoformat() if latest_crawled else None
 
         # Canonical status approximation (check if product has meaningful data)
         # In a real implementation, this would check for proper canonical tags
@@ -337,6 +337,14 @@ class SEODashboardView(JWTAdminMixin, APIView):
             .order_by("score_overall")[:10]
             .values("product_id", "product__name", "score_overall")
         )
+        # Last updated (most recent SEO update)
+        latest_seo_update = seo_rows.order_by('-updated_at').first()
+        last_updated = latest_seo_update.updated_at.isoformat() if latest_seo_update else None
+
+        # Crawl date (most recent crawl)
+        latest_crawled = seo_rows.exclude(last_crawled__isnull=True).order_by('-last_crawled').first()
+        crawl_date = latest_crawled.last_crawled.isoformat() if latest_crawled else None
+
         recently_generated = list(
             ProductSEO.objects.filter(generated_at__isnull=False)
             .select_related("product")
@@ -351,8 +359,8 @@ class SEODashboardView(JWTAdminMixin, APIView):
             "average_score": round(average_score, 1),
             "optimized_count": optimized_count,
             "indexed_count": seo_rows.filter(indexed=True).count(),
-            "last_updated": seo_rows.order_by('-updated_at').first().updated_at.isoformat() if seo_rows.order_by('-updated_at').first() else None,
-            "crawl_date": seo_rows.order_by('-last_crawled').first().last_crawled.isoformat() if seo_rows.exclude(last_crawled__isnull=True).order_by('-last_crawled').first() else None,
+            "last_updated": last_updated,
+            "crawl_date": crawl_date,
             "canonical_ready_count": seo_rows.exclude(canonical_url='').count(),
             "schema_enabled_count": seo_rows.filter(schema_score__gt=0).count(),
             "score_distribution": buckets,

@@ -596,11 +596,6 @@ class ProductSEO(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="seo_drafts_published",
     )
-    # SEO tracking fields for dashboard
-    indexed = models.BooleanField(default=False, help_text="Whether the page is indexed by search engines")
-    last_crawled = models.DateTimeField(null=True, blank=True, help_text="When search engines last crawled the page")
-    canonical_url = models.URLField(blank=True, default="", help_text="Canonical URL for the page")
-    schema_score = models.PositiveSmallIntegerField(default=0, help_text="Score representing schema completeness and validity (0-100)")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
