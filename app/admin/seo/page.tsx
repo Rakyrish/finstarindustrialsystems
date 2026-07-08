@@ -27,26 +27,82 @@ const SparkleIcon = () => (
 const CheckIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
 );
-const HistoryIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></svg>
+const HistoryIcon = ({ className = "", ...props }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+    <path d="M3 3v5h5" />
+    <path d="M12 7v5l4 2" />
+  </svg>
 );
-const LoaderIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>
+const LoaderIcon = ({ className = "", ...props }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={`animate-spin ${className}`}
+    {...props}
+  >
+    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+  </svg>
 );
-const EditIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4-1 1-4 9.5-9.5z"/></svg>
+const EditIcon = ({ className = "", ...props }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3 15l-4-1 1-4 9.5-9.5z" />
+  </svg>
 );
-const UploadIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5l4-4-4-4v4a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+const UploadIcon = ({ className = "", ...props }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M21 15v4a2 2 0 0 1-2 2H5l4-4-4-4v4a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    <path d="m7.5 4.27 9 5.15" />
+    <path d="m3.3 7 8.7 5 8.7-5" />
+    <path d="M12 22V12" />
+  </svg>
 );
-const SearchIcon2 = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-);
-const EyeIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-);
-const SearchIcon2 = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+const SearchIcon2 = ({ className = "" }: { className?: string }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
 );
 const EyeIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
@@ -160,6 +216,7 @@ function ScoreBadge({ score, label }: { score: number | null | undefined; label:
 function SeoOptimizerWorkspace() {
   const { addToast } = useToast();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const preselectProductId = searchParams.get("product");
 
   const [products, setProducts] = useState<ApiProduct[]>([]);
@@ -843,7 +900,7 @@ function StructuredDataValidation({ liveData, draftData }: { liveData: ApiSeoCon
             <span className={`px-2 py-1 rounded text-xs font-medium ${liveFaqSchema.valid ? "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-200"}`}>
               {liveFaqSchema.valid ? "✓ Valid" : "⚠ " + liveFaqSchema.type}
             </span>
-            <span className={`px-2 py-1 rounded text-xs font-medium ${draftFaqSchema.valid ? "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-200`}`}>
+            <span className={`px-2 py-1 rounded text-xs font-medium ${draftFaqSchema.valid ? "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-200"}`}>
               {draftFaqSchema.valid ? "✓ Valid" : "⚠ " + draftFaqSchema.type}
             </span>
           </div>
@@ -856,8 +913,8 @@ function StructuredDataValidation({ liveData, draftData }: { liveData: ApiSeoCon
             <span className={`px-2 py-1 rounded text-xs font-medium ${liveBreadcrumbSchema.valid ? "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-200"}`}>
               {liveBreadcrumbSchema.valid ? "✓ Valid" : "⚠ " + liveBreadcrumbSchema.type}
             </span>
-            <span className={`px-2 py-1 rounded text-xs font-medium ${draftBreadcrumbSchema.valid ? "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-200`}>`{
-              draftBreadcrumbSchema.valid ? "✓ Valid" : "⚠ " + draftBreadcrumbSchema.type
+            <span className={`px-2 py-1 rounded text-xs font-medium ${draftBreadcrumbSchema.valid ? "bg-green-100 text-green-800 dark:bg-green-800/20 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-800/20 dark:text-red-200"}`}>
+              {draftBreadcrumbSchema.valid ? "✓ Valid" : "⚠ " + draftBreadcrumbSchema.type
             }</span>
           </div>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Live / Draft</p>
@@ -953,8 +1010,7 @@ function SeoDraftEditor({
 
 // Helper function to render form editors for different field types
 function renderFieldValueEditor(value: unknown, kind: string, onChange: (updatedValue: unknown) => void) {
-  if (value === null || value === undefined) {
-    switch (kind) {
+  switch (kind) {
       case "text":
         return <input
           type="text"
@@ -965,7 +1021,7 @@ function renderFieldValueEditor(value: unknown, kind: string, onChange: (updated
       case "textarea":
         return <textarea
           placeholder="Enter value..."
-          rows="3"
+          rows={3}
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
         />;
@@ -977,9 +1033,10 @@ function renderFieldValueEditor(value: unknown, kind: string, onChange: (updated
               placeholder="Add item..."
               className="flex-1 px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
               onKeyPress={(e) => {
-                if (e.key === 'Enter' && e.target.value.trim()) {
-                  onChange([...(Array.isArray(value) ? value : []), e.target.value.trim()]);
-                  e.target.value = '';
+                const target = e.target as HTMLInputElement;
+                if (e.key === 'Enter' && target.value.trim()) {
+                  onChange([...(Array.isArray(value) ? value : []), target.value.trim()]);
+                  target.value = '';
                 }
               }}
             />
@@ -1045,7 +1102,7 @@ function renderFieldValueEditor(value: unknown, kind: string, onChange: (updated
           {Array.isArray(value) && value.map((item, index) => (
             <div key={index} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 p-2 rounded">
               <span className="font-medium">{Object.keys(item)[0] || ''}:</span>
-              <span className="flex-1 truncate">{Object.values(item)[0] || ''}</span>
+              <span className="flex-1 truncate">{String(Object.values(item)[0] ?? '')}</span>
               <button
                 onClick={() => onChange(value.filter((_, i) => i !== index))}
                 className="text-xs text-red-500 hover:text-red-700"
@@ -1154,7 +1211,7 @@ function renderFieldValueEditor(value: unknown, kind: string, onChange: (updated
         return <textarea
           value={typeof value === 'object' && value !== null ? JSON.stringify(value, null, 2) : ''}
           placeholder="Enter valid JSON..."
-          rows="5"
+          rows={5}
           onChange={(e) => {
             try {
               const parsed = JSON.parse(e.target.value);
@@ -1170,7 +1227,7 @@ function renderFieldValueEditor(value: unknown, kind: string, onChange: (updated
         return <textarea
           value={typeof value === 'string' ? value : ''}
           placeholder="Enter HTML content..."
-          rows="5"
+          rows={5}
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
         />;
@@ -1182,76 +1239,5 @@ function renderFieldValueEditor(value: unknown, kind: string, onChange: (updated
           className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
         />;
     }
-  }
 }
 
-// SEO Draft Editor Component
-function SeoDraftEditor({
-  initialData,
-  onSave,
-  onCancel,
-  isLoading = false
-}: {
-  initialData: ApiSeoContent | null;
-  onSave: (data: ApiSeoContent) => Promise<void>;
-  onCancel: () => void;
-  isLoading?: boolean;
-}) {
-  const [formData, setFormData] = useState<ApiSeoContent | null>(initialData);
-  const [isSaving, setIsSaving] = useState(false);
-
-  const handleSave = async () => {
-    if (!formData) return;
-    setIsSaving(true);
-    try {
-      await onSave(formData);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  if (!formData) {
-    return <div className="text-center py-8">No data to edit</div>;
-  }
-
-  return (
-    <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl overflow-hidden shadow-sm">
-      <div className="px-5 py-3 border-b border-slate-100 dark:border-white/5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <EditIcon className="h-4 w-4" />
-          <h3 className="text-lg font-bold text-slate-900 dark:text-white">SEO Draft Editor</h3>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={onCancel} className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-300 transition disabled:opacity-50">
-            Cancel
-          </button>
-          <button onClick={handleSave} disabled={isSaving || isLoading} className="px-4 py-2 text-sm font-medium rounded-lg border border-transparent bg-orange-500 text-white hover:bg-orange-600 disabled:opacity-50">
-            {isSaving ? "Saving..." : "Save Changes"}
-          </button>
-        </div>
-      </div>
-
-      <div className="p-6">
-        <div className="space-y-6">
-          {FIELD_LABELS.map(({ key, label, kind }) => {
-            const value = formData?.[key] ?? null;
-
-            return (
-              <div key={key} className="space-y-2">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">{label}</label>
-                {renderFieldValueEditor(value, kind, (updatedValue) =>
-                  setFormData(prev => prev ? {...prev, [key]: updatedValue} : formData)
-                )}
-                {value !== null && value !== undefined && typeof value === 'string' && value.length > 0 && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 italic mt-1">
-                    Current: "{value}"
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}

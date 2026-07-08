@@ -1055,6 +1055,9 @@ export interface ApiSeoDashboard {
     score_overall: number;
     published_at: string | null;
   }[];
+  indexed_count: number;
+  schema_enabled_count: number;
+  last_updated: string | null;
   // Issue statistics
   issue_counts: Record<string, number>;
   top_issues: { issue_id: string; issue_name: string; count: number }[];
