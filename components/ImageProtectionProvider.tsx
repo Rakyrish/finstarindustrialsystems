@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useMemo } from "react";
+import { createContext, useContext, useMemo, useEffect } from "react";
 import type { ApiPublicImageProtectionSettings } from "@/lib/api";
+import { message } from "antd";
 
 export interface ImageProtectionState {
   watermarkEnabled: boolean;
@@ -37,8 +38,51 @@ export function ImageProtectionProvider({
     [settings],
   );
 
+  function GlobalProtection() {
+    const { rightClickProtectionEnabled } = useImageProtection();
+
+    useEffect(() => {
+      if (!rightClickProtectionEnabled) {
+        document.body.classList.remove('disable-select');
+        return;
+      }
+
+      const handleContextMenu = (e: Event) => {
+        e.preventDefault();
+        message.warning('Right-click is disabled');
+      };
+
+      const handleCopy = (e: ClipboardEvent) => {
+        e.preventDefault();
+        message.warning('Copying is disabled');
+      };
+
+      const handleCut = (e: ClipboardEvent) => {
+        e.preventDefault();
+        message.warning('Cutting is disabled');
+      };
+
+      document.body.classList.add('disable-select');
+      document.addEventListener('contextmenu', handleContextMenu);
+      document.addEventListener('copy', handleCopy);
+      document.addEventListener('cut', handleCut);
+
+      return () => {
+        document.body.classList.remove('disable-select');
+        document.removeEventListener('contextmenu', handleContextMenu);
+        document.removeEventListener('copy', handleCopy);
+        document.removeEventListener('cut', handleCut);
+      };
+    }, [rightClickProtectionEnabled]);
+
+    return null;
+  }
+
   return (
-    <ImageProtectionContext.Provider value={value}>{children}</ImageProtectionContext.Provider>
+    <ImageProtectionContext.Provider value={value}>
+      {children}
+      <GlobalProtection />
+    </ImageProtectionContext.Provider>
   );
 }
 

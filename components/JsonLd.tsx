@@ -249,8 +249,11 @@ export function ReviewAggregateJsonLd({
 }
 
 export function ProductJsonLd({ product }: { product: Product }) {
-  const description = stripHtml(product.description || product.shortDescription);
+  const description = stripHtml(product.seo?.introduction || product.description || product.shortDescription);
   const faqs = buildProductFaqs(product);
+  const specs = product.seo && Object.keys(product.seo.technicalSpecifications).length > 0
+    ? product.seo.technicalSpecifications
+    : product.specs;
 
   return (
     <>
@@ -273,8 +276,8 @@ export function ProductJsonLd({ product }: { product: Product }) {
             "@id": `${SITE_URL}/#organization`,
             name: SITE_NAME,
           },
-          additionalProperty: product.specs
-            ? Object.entries(product.specs).map(([name, value]) => ({
+          additionalProperty: specs
+            ? Object.entries(specs).map(([name, value]) => ({
                 "@type": "PropertyValue",
                 name,
                 value,

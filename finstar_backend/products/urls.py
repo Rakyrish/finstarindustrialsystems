@@ -15,9 +15,11 @@ from .seo_views import (
     SEOBulkStartView,
     SEOBulkStatusView,
     SEODashboardView,
+    SEOFixIssueView,
     SEOGenerateDraftView,
     SEOProductDetailView,
     SEORestoreVersionView,
+    SEOSaveDraftView,
     SEOVersionListView,
 )
 from .watermark_views import (
@@ -153,6 +155,10 @@ urlpatterns = [
     path("admin/seo/products/<int:product_id>/generate/", SEOGenerateDraftView.as_view()),
     path("admin/seo/products/<int:product_id>/apply", SEOApplyDraftView.as_view(), name="admin-seo-apply"),
     path("admin/seo/products/<int:product_id>/apply/", SEOApplyDraftView.as_view()),
+    path("admin/seo/products/<int:product_id>/draft", SEOSaveDraftView.as_view(), name="admin-seo-save-draft"),
+    path("admin/seo/products/<int:product_id>/draft/", SEOSaveDraftView.as_view()),
+    path("admin/seo/products/<int:product_id>/fix", SEOFixIssueView.as_view(), name="admin-seo-fix"),
+    path("admin/seo/products/<int:product_id>/fix/", SEOFixIssueView.as_view()),
     path("admin/seo/products/<int:product_id>/versions", SEOVersionListView.as_view(), name="admin-seo-versions"),
     path("admin/seo/products/<int:product_id>/versions/", SEOVersionListView.as_view()),
     path("admin/seo/products/<int:product_id>/versions/<int:version_id>/restore", SEORestoreVersionView.as_view(), name="admin-seo-restore"),

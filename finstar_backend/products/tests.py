@@ -11,7 +11,7 @@ from django.test.utils import override_settings
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from .models import Category, Inquiry, InventoryItem, InventorySyncJob, Product, StandaloneInventoryItem, SyncLog
+from .models import Category, Inquiry, InventoryItem, InventorySyncJob, Product, ProductSEO, StandaloneInventoryItem, SyncLog
 from .sheets_service import ServiceState
 from .services.inventory_sync import enqueue_standalone_upsert, process_pending_sync_jobs
 
@@ -103,6 +103,50 @@ class PublicProductAPITests(BaseAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "ok")
         self.assertEqual(response.data["database"], "connected")
+
+    def test_product_detail_seo_is_null_when_never_generated(self):
+        response = self.client.get(f"/api/products/{self.product.slug}")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(response.data["seo"])
+
+    def test_product_detail_seo_is_null_for_unpublished_draft(self):
+        ProductSEO.objects.create(
+            product=self.product,
+            draft={"seo_title": "Draft Only Title"},
+        )
+        response = self.client.get(f"/api/products/{self.product.slug}")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(response.data["seo"])
+
+    def test_product_detail_exposes_published_seo_content(self):
+        from django.utils import timezone
+
+        ProductSEO.objects.create(
+            product=self.product,
+            seo_title="Scroll Refrigeration Unit | Finstar Kenya",
+            meta_description="Reliable scroll refrigeration units supplied across Kenya.",
+            introduction="<p>Industrial-grade cooling for demanding environments.</p>",
+            features=["Energy efficient compressor"],
+            benefits=["Lower operating costs"],
+            applications=["Cold storage"],
+            industries_served=["Food Processing"],
+            faqs=[{"question": "Is it available in Kenya?", "answer": "Yes, nationwide."}],
+            cta_text="Request a quote today.",
+            published_at=timezone.now(),
+        )
+        response = self.client.get(f"/api/products/{self.product.slug}")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        seo_data = response.data["seo"]
+        self.assertIsNotNone(seo_data)
+        self.assertEqual(seo_data["seo_title"], "Scroll Refrigeration Unit | Finstar Kenya")
+        self.assertEqual(seo_data["features"], ["Energy efficient compressor"])
+        self.assertEqual(
+            seo_data["faqs"],
+            [{"question": "Is it available in Kenya?", "answer": "Yes, nationwide."}],
+        )
 
 
 class AdminProductAPITests(BaseAPITestCase):
@@ -479,7 +523,7 @@ class InventorySyncTests(TestCase):
 
             def sync_records(self, tab_name, records):
                 self.synced.append((tab_name, records))
-                return len(records)
+                return len(records), {}
 
         dummy_service = DummySheetsService()
         mock_state.return_value = ServiceState(
@@ -533,3 +577,126 @@ class InventorySyncTests(TestCase):
                 scope=InventorySyncJob.Scope.STANDALONE,
             ).exists()
         )
+
+
+class SEOOptimizerFixAPITests(BaseAPITestCase):
+    """Tests for the SEO Optimizer's draft-save and issue-fix endpoints."""
+
+    def setUp(self):
+        super().setUp()
+        self.staff_user = User.objects.create_user(
+            username="seostaff",
+            email="seostaff@example.com",
+            password="StrongPass123!",
+            is_staff=True,
+        )
+        token_response = self.client.post(
+            "/api/auth/token",
+            {"username": "seostaff", "password": "StrongPass123!"},
+            format="json",
+        )
+        self.admin_client = APIClient()
+        self.admin_client.credentials(
+            HTTP_AUTHORIZATION=f"Bearer {token_response.data['access']}"
+        )
+
+    def _seo_content(self, **overrides):
+        content = {
+            "seo_title": "Bad Title",
+            "meta_description": "Too short.",
+            "focus_keyword": "industrial compressor",
+            "secondary_keywords": [], "long_tail_keywords": [],
+            "introduction": "<p>Short.</p>", "features": [], "benefits": [],
+            "technical_specifications": {}, "applications": [], "industries_served": [],
+            "delivery_locations": [], "faqs": [], "cta_text": "",
+            "internal_links": [], "product_schema": {}, "faq_schema": {},
+            "breadcrumb_schema": {}, "organization_schema": {},
+            "image_seo_filename": "", "image_alt_text": "", "image_title": "",
+            "image_caption": "", "image_description": "",
+        }
+        content.update(overrides)
+        return content
+
+    def test_save_draft_requires_admin(self):
+        response = self.client.patch(
+            f"/api/admin/seo/products/{self.product.id}/draft",
+            {"seo_title": "New Title"},
+            format="json",
+        )
+        self.assertIn(response.status_code, {status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN})
+
+    def test_save_draft_persists_edits_and_rescores(self):
+        response = self.admin_client.patch(
+            f"/api/admin/seo/products/{self.product.id}/draft",
+            {"seo_title": "Reliable Scroll Refrigeration Unit Supplier in Kenya"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data["draft"]["seo_title"],
+            "Reliable Scroll Refrigeration Unit Supplier in Kenya",
+        )
+        self.assertIn("overall", response.data["score"])
+
+        seo = ProductSEO.objects.get(product=self.product)
+        self.assertEqual(
+            seo.draft["seo_title"],
+            "Reliable Scroll Refrigeration Unit Supplier in Kenya",
+        )
+
+    def test_save_draft_rejects_unknown_field(self):
+        response = self.admin_client.patch(
+            f"/api/admin/seo/products/{self.product.id}/draft",
+            {"not_a_real_field": "x"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_fix_issue_deterministic_rebuilds_internal_links(self):
+        ProductSEO.objects.create(product=self.product, draft=self._seo_content())
+
+        response = self.admin_client.post(
+            f"/api/admin/seo/products/{self.product.id}/fix",
+            {"issue_id": "linking_none"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["fixed_field"], "internal_links")
+        self.assertIsInstance(response.data["fixed_value"], list)
+
+    @patch("products.seo_fix_service._build_ai_fix")
+    def test_fix_issue_ai_field_calls_targeted_fix(self, mock_fix):
+        mock_fix.return_value = "A Reliable Scroll Refrigeration Unit Supplier in Kenya"
+        seo = ProductSEO.objects.create(product=self.product, draft=self._seo_content())
+
+        response = self.admin_client.post(
+            f"/api/admin/seo/products/{self.product.id}/fix",
+            {"issue_id": "title_too_short"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["fixed_field"], "seo_title")
+        self.assertEqual(
+            response.data["fixed_value"],
+            "A Reliable Scroll Refrigeration Unit Supplier in Kenya",
+        )
+        mock_fix.assert_called_once()
+
+        seo.refresh_from_db()
+        self.assertEqual(
+            seo.draft["seo_title"],
+            "A Reliable Scroll Refrigeration Unit Supplier in Kenya",
+        )
+
+    def test_fix_issue_unresolvable_issue_id_returns_200_already_resolved(self):
+        ProductSEO.objects.create(product=self.product, draft=self._seo_content())
+
+        response = self.admin_client.post(
+            f"/api/admin/seo/products/{self.product.id}/fix",
+            {"issue_id": "not_a_real_issue"},
+            format="json",
+        )
+        # Unknown / already-resolved issue IDs now return 200 with already_resolved=True
+        # so stale frontend UIs can refresh gracefully instead of showing an error.
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data.get("already_resolved"))

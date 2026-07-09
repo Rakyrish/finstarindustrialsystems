@@ -84,12 +84,36 @@ function BackIcon() {
   );
 }
 
+function BulletListBlock({ title, items }: { title: string; items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div>
+      <h3 className="mb-3 text-sm font-bold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-300">
+        {title}
+      </h3>
+      <ul className="space-y-2">
+        {items.map((item, i) => (
+          <li key={i} className="flex items-start gap-2 text-sm leading-7 text-slate-600 dark:text-slate-400">
+            <span className="mt-2.5 h-1.5 w-1.5 shrink-0 rounded-full bg-orange-500" />
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default async function ProductDetailPage({ params }: ProductDetailPageProps) {
   const { slug } = await params;
   const product = await getProductOrNotFound(slug);
   const relatedProducts = await getRelatedProducts(product);
   const categoryIcon = getCategoryIcon(product.category.slug, product.category.icon);
   const faqs = buildProductFaqs(product);
+  const seo = product.seo;
+  const displaySpecs = seo && Object.keys(seo.technicalSpecifications).length > 0
+    ? seo.technicalSpecifications
+    : product.specs;
+  const introductionContent = seo?.introduction || product.description;
   const breadcrumbs: BreadcrumbItem[] = [
     { name: "Home", href: "/" },
     { name: "Products", href: "/products" },
@@ -156,13 +180,13 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
             </p>
 
 
-            {product.specs && Object.keys(product.specs).length > 0 && (
+            {displaySpecs && Object.keys(displaySpecs).length > 0 && (
               <div className="mt-6 rounded-2xl bg-slate-50 p-5 dark:bg-slate-800/50">
                 <h2 className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-slate-700 dark:text-slate-300">
                   Technical Specifications
                 </h2>
                 <div className="space-y-2">
-                  {Object.entries(product.specs).map(([key, value]) => (
+                  {Object.entries(displaySpecs).map(([key, value]) => (
                     <div key={key} className="flex items-start gap-3 text-sm">
                       <span className="w-40 shrink-0 font-medium text-slate-400 dark:text-slate-500">{key}</span>
                       <span className="font-semibold text-slate-700 dark:text-slate-300">{value}</span>
@@ -200,7 +224,7 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
           </div>
         </div>
 
-        {product.description && (
+        {introductionContent && (
           <section className="mt-14 lg:mt-20">
             <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-slate-700/60 dark:bg-slate-900">
               <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50 px-6 py-4 dark:border-slate-800 dark:bg-slate-900/80">
@@ -211,8 +235,44 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                   Full Product Details
                 </h2>
               </div>
-              <div className="px-6 py-8 sm:px-8">
-                <ProductDescription content={product.description} />
+              <div className="space-y-8 px-6 py-8 sm:px-8">
+                <ProductDescription content={introductionContent} />
+
+                {seo && (seo.features.length > 0 || seo.benefits.length > 0) && (
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <BulletListBlock title="Key Features" items={seo.features} />
+                    <BulletListBlock title="Benefits" items={seo.benefits} />
+                  </div>
+                )}
+
+                {seo && (seo.applications.length > 0 || seo.industriesServed.length > 0) && (
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <BulletListBlock title="Applications" items={seo.applications} />
+                    {seo.industriesServed.length > 0 && (
+                      <div>
+                        <h3 className="mb-3 text-sm font-bold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-300">
+                          Industries Served
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          {seo.industriesServed.map((item, i) => (
+                            <span
+                              key={i}
+                              className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                            >
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {seo?.ctaText && (
+                  <p className="rounded-2xl bg-orange-50 px-5 py-4 text-sm font-medium leading-7 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300">
+                    {seo.ctaText}
+                  </p>
+                )}
               </div>
             </div>
           </section>

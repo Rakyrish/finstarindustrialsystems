@@ -121,6 +121,7 @@ export default function WatermarkManagementPage() {
     watermark_font_size: 48,
     watermark_angle: -45,
     watermark_position: "tiled" as "center" | "tiled",
+    watermark_color: "#ffffff",
   });
   const [savingDesign, setSavingDesign] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -156,6 +157,7 @@ export default function WatermarkManagementPage() {
           watermark_font_size: s.watermark_font_size,
           watermark_angle: s.watermark_angle,
           watermark_position: s.watermark_position,
+          watermark_color: s.watermark_color,
         });
       })
       .catch(() => addToast("Failed to load watermark settings.", "error"));
@@ -379,6 +381,15 @@ export default function WatermarkManagementPage() {
               <option value="tiled">Repeated diagonal pattern</option>
               <option value="center">Centered (single)</option>
             </select>
+          </label>
+          <label className="text-sm">
+            <span className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Watermark Color</span>
+            <input
+              type="color"
+              value={form.watermark_color}
+              onChange={(e) => setForm((f) => ({ ...f, watermark_color: e.target.value }))}
+              className="w-full p-0 border-none bg-transparent w-12 h-12 cursor-pointer"
+            />
           </label>
         </div>
 

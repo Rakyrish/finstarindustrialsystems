@@ -15,6 +15,25 @@ export interface ProductCategory {
   icon: string;
 }
 
+/** Published SEO content for a product — present only once an admin has applied it. */
+export interface ProductSeoContent {
+  seoTitle: string;
+  metaDescription: string;
+  introduction: string;
+  features: string[];
+  benefits: string[];
+  technicalSpecifications: Record<string, string>;
+  applications: string[];
+  industriesServed: string[];
+  faqs: { question: string; answer: string }[];
+  ctaText: string;
+  internalLinks: { anchor_text: string; url: string }[];
+  imageAltText: string;
+  imageTitle: string;
+  imageCaption: string;
+  imageDescription: string;
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -27,6 +46,7 @@ export interface Product {
   isActive: boolean;
   featured: boolean;
   specs: Record<string, string> | null;
+  seo: ProductSeoContent | null;
   createdAt: string;
   updatedAt: string;
 }

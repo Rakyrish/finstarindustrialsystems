@@ -41,11 +41,40 @@ class CategorySerializer(serializers.ModelSerializer):
         }
 
 
+class PublicProductSEOSerializer(serializers.ModelSerializer):
+    """
+    Read-only, public-safe slice of a product's published SEO content.
+    Only ever exposes fields once ProductSEO.published_at is set — a
+    pending draft never reaches a site visitor through this serializer.
+    """
+
+    class Meta:
+        model = ProductSEO
+        fields = [
+            "seo_title",
+            "meta_description",
+            "introduction",
+            "features",
+            "benefits",
+            "technical_specifications",
+            "applications",
+            "industries_served",
+            "faqs",
+            "cta_text",
+            "internal_links",
+            "image_alt_text",
+            "image_title",
+            "image_caption",
+            "image_description",
+        ]
+
+
 class ProductSerializer(serializers.ModelSerializer):
     """Serializers for Product with nested category data."""
 
     category = CategorySerializer(read_only=True)
     image_url = serializers.SerializerMethodField()
+    seo = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -60,6 +89,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "is_active",
             "featured",
             "specs",
+            "seo",
             "created_at",
             "updated_at",
         ]
@@ -67,6 +97,13 @@ class ProductSerializer(serializers.ModelSerializer):
     def get_image_url(self, obj):
         """Returns the watermarked URL when protection is enabled + applied, else the original."""
         return get_effective_image_url(obj)
+
+    def get_seo(self, obj):
+        """Published SEO content for this product, or None if never applied."""
+        seo = getattr(obj, "seo", None)
+        if seo is None or not seo.published_at:
+            return None
+        return PublicProductSEOSerializer(seo).data
 
 
 class ProductListSerializer(serializers.ModelSerializer):
@@ -126,12 +163,6 @@ class AdminProductSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at", "category"]
-
-    def get_watermark_applied(self, obj):
-        try:
-            return obj.image_protection.is_watermark_applied
-        except ProductImageProtection.DoesNotExist:
-            return False
         extra_kwargs = {
             "slug": {"required": False, "allow_blank": True},
             "short_description": {"required": False},
@@ -140,6 +171,12 @@ class AdminProductSerializer(serializers.ModelSerializer):
             "specs": {"required": False},
             "is_active": {"required": False},
         }
+
+    def get_watermark_applied(self, obj):
+        try:
+            return obj.image_protection.is_watermark_applied
+        except ProductImageProtection.DoesNotExist:
+            return False
 
     def validate_image_url(self, value):
         if not value:

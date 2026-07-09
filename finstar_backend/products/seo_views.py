@@ -17,6 +17,7 @@ from .ai_service import AIServiceError
 from .models import Product, ProductSEO, SEORegenerationJob, SEOVersion
 from .serializers import SEOProductSummarySerializer, SEOVersionSerializer
 from .seo_ai_service import CONTENT_FIELDS, REQUIRED_KEYS, generate_seo_content
+from .seo_fix_service import annotate_fixable, apply_issue_fix
 from .seo_schema_builder import build_all_schemas
 from .seo_scoring import score_seo_content
 from .services.seo_bulk import enqueue_seo_bulk_jobs
@@ -65,7 +66,7 @@ class SEOGenerateDraftView(JWTAdminMixin, APIView):
         content["internal_links"] = ai_data["internal_links"]
         content.update(schemas)
 
-        score = score_seo_content(product, content)
+        score = annotate_fixable(score_seo_content(product, content))
 
         seo.draft = {**content, "score": score}
         seo.generated_at = timezone.now()
@@ -159,7 +160,7 @@ class SEOApplyDraftView(JWTAdminMixin, APIView):
             version_id = version.id
 
         content = {field: seo.draft.get(field) for field in CONTENT_FIELDS}
-        score = score_seo_content(product, content)
+        score = annotate_fixable(score_seo_content(product, content))
 
         for field in CONTENT_FIELDS:
             setattr(seo, field, content[field])
@@ -178,6 +179,85 @@ class SEOApplyDraftView(JWTAdminMixin, APIView):
             "live_score": score,
             "version_created": version_created,
             "version_id": version_id,
+        })
+
+
+class SEOSaveDraftView(JWTAdminMixin, APIView):
+    """
+    PATCH /api/admin/seo/products/<id>/draft — persist manual edits to the
+    pending draft (creating one from the current live content if none
+    exists yet). Never touches live content — use Apply Draft for that.
+    """
+
+    def patch(self, request, product_id):
+        product = get_object_or_404(Product, pk=product_id)
+        seo, _ = ProductSEO.objects.get_or_create(product=product)
+
+        base = seo.draft if seo.draft else _live_content_dict(seo)
+        content = {field: base.get(field) for field in CONTENT_FIELDS}
+
+        updates = request.data or {}
+        unknown = set(updates.keys()) - set(CONTENT_FIELDS)
+        if unknown:
+            return Response(
+                {"detail": f"Unknown field(s): {', '.join(sorted(unknown))}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        content.update({key: value for key, value in updates.items() if key in CONTENT_FIELDS})
+
+        score = annotate_fixable(score_seo_content(product, content))
+        seo.draft = {**content, "score": score}
+        seo.save(update_fields=["draft", "updated_at"])
+
+        return Response({"draft": content, "score": score})
+
+
+class SEOFixIssueView(JWTAdminMixin, APIView):
+    """
+    POST /api/admin/seo/products/<id>/fix — resolve a single detected SEO
+    issue against the pending draft (creating one from live content if
+    none exists). Body: {"issue_id": "..."}.
+    """
+
+    def post(self, request, product_id):
+        product = get_object_or_404(Product, pk=product_id)
+        seo = get_object_or_404(ProductSEO, product=product)
+
+        issue_id = request.data.get("issue_id")
+        if not issue_id:
+            return Response({"detail": "issue_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        base = seo.draft if seo.draft else _live_content_dict(seo)
+        content = {field: base.get(field) for field in CONTENT_FIELDS}
+
+        current_score = score_seo_content(product, content)
+        issue = next((i for i in current_score["issues"] if i.get("id") == issue_id), None)
+        if issue is None:
+            # Issue is already resolved in the current draft — return the up-to-date
+            # state instead of an error so stale UIs can refresh cleanly.
+            score = annotate_fixable(current_score)
+            return Response({
+                "draft": content,
+                "score": score,
+                "already_resolved": True,
+                "detail": f"Issue '{issue_id}' is already resolved in the current draft.",
+            })
+
+        try:
+            field, new_value = apply_issue_fix(product, content, issue)
+        except AIServiceError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        content[field] = new_value
+        score = annotate_fixable(score_seo_content(product, content))
+        seo.draft = {**content, "score": score}
+        seo.save(update_fields=["draft", "updated_at"])
+
+        return Response({
+            "draft": content,
+            "score": score,
+            "fixed_field": field,
+            "fixed_value": new_value,
         })
 
 
@@ -214,7 +294,7 @@ class SEORestoreVersionView(JWTAdminMixin, APIView):
             )
 
         content = {field: version.snapshot.get(field) for field in CONTENT_FIELDS}
-        score = score_seo_content(product, content)
+        score = annotate_fixable(score_seo_content(product, content))
 
         for field in CONTENT_FIELDS:
             setattr(seo, field, content[field])
@@ -255,9 +335,9 @@ class SEODashboardView(JWTAdminMixin, APIView):
         latest_seo_update = seo_rows.order_by('-updated_at').first()
         last_updated = latest_seo_update.updated_at.isoformat() if latest_seo_update else None
 
-        # Crawl date placeholder (would need to be tracked separately)
-        # For now, we'll use the same as last updated or indicate it's not tracked
-        crawl_date = last_updated  # In a real implementation, this would be separate
+        # Crawl date (most recent crawl)
+        latest_crawled = seo_rows.exclude(last_crawled__isnull=True).order_by('-last_crawled').first()
+        crawl_date = latest_crawled.last_crawled.isoformat() if latest_crawled else None
 
         # Canonical status approximation (check if product has meaningful data)
         # In a real implementation, this would check for proper canonical tags
@@ -337,6 +417,14 @@ class SEODashboardView(JWTAdminMixin, APIView):
             .order_by("score_overall")[:10]
             .values("product_id", "product__name", "score_overall")
         )
+        # Last updated (most recent SEO update)
+        latest_seo_update = seo_rows.order_by('-updated_at').first()
+        last_updated = latest_seo_update.updated_at.isoformat() if latest_seo_update else None
+
+        # Crawl date (most recent crawl)
+        latest_crawled = seo_rows.exclude(last_crawled__isnull=True).order_by('-last_crawled').first()
+        crawl_date = latest_crawled.last_crawled.isoformat() if latest_crawled else None
+
         recently_generated = list(
             ProductSEO.objects.filter(generated_at__isnull=False)
             .select_related("product")
@@ -351,8 +439,8 @@ class SEODashboardView(JWTAdminMixin, APIView):
             "average_score": round(average_score, 1),
             "optimized_count": optimized_count,
             "indexed_count": seo_rows.filter(indexed=True).count(),
-            "last_updated": seo_rows.order_by('-updated_at').first().updated_at.isoformat() if seo_rows.order_by('-updated_at').first() else None,
-            "crawl_date": seo_rows.order_by('-last_crawled').first().last_crawled.isoformat() if seo_rows.exclude(last_crawled__isnull=True).order_by('-last_crawled').first() else None,
+            "last_updated": last_updated,
+            "crawl_date": crawl_date,
             "canonical_ready_count": seo_rows.exclude(canonical_url='').count(),
             "schema_enabled_count": seo_rows.filter(schema_score__gt=0).count(),
             "score_distribution": buckets,

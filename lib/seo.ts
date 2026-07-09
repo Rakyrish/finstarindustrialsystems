@@ -389,12 +389,13 @@ export function buildPageMetadata({
 }
 
 export function buildProductMetadata(product: Product): Metadata {
+  const seo = product.seo;
   const descriptionSource = product.shortDescription || stripHtml(product.description);
-  const description = `${descriptionSource.slice(0, 150)} ${descriptionSource.length > 150 ? "..." : ""}`.trim();
+  const fallbackDescription = `${descriptionSource.slice(0, 150)} ${descriptionSource.length > 150 ? "..." : ""}`.trim();
 
   return buildPageMetadata({
-    title: `${product.name} | ${product.category.name} Supplier in Kenya`,
-    description,
+    title: seo?.seoTitle || `${product.name} | ${product.category.name} Supplier in Kenya`,
+    description: seo?.metaDescription || fallbackDescription,
     path: `/products/${product.slug}`,
     keywords: [
       product.name,
@@ -462,6 +463,10 @@ export function buildCategoryMetadata(category: Pick<Category, "slug" | "name" |
 }
 
 export function buildProductFaqs(product: Product): FaqItem[] {
+  if (product.seo?.faqs && product.seo.faqs.length > 0) {
+    return product.seo.faqs;
+  }
+
   return [
     {
       question: `Where can I buy ${product.name} in Kenya?`,
