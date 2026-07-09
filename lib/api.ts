@@ -6,6 +6,7 @@ import type {
   PaginatedResponse,
   Product,
   ProductCategory,
+  ProductSeoContent,
 } from "@/types";
 
 // In Docker, SSR requests use the internal network URL (http://backend:8000/)
@@ -38,6 +39,25 @@ export interface ApiCategory {
   product_count?: number;
 }
 
+/** Published SEO content nested in the public product API response. */
+export interface ApiProductSeoPublic {
+  seo_title: string;
+  meta_description: string;
+  introduction: string;
+  features: string[];
+  benefits: string[];
+  technical_specifications: Record<string, string>;
+  applications: string[];
+  industries_served: string[];
+  faqs: ApiSeoFaq[];
+  cta_text: string;
+  internal_links: ApiSeoInternalLink[];
+  image_alt_text: string;
+  image_title: string;
+  image_caption: string;
+  image_description: string;
+}
+
 export interface ApiProduct {
   id: number;
   name: string;
@@ -51,6 +71,7 @@ export interface ApiProduct {
   is_active: boolean;
   featured: boolean;
   specs: Record<string, string> | null;
+  seo?: ApiProductSeoPublic | null;
   created_at: string;
   updated_at: string;
 }
@@ -99,7 +120,7 @@ export interface InventoryWritePayload {
   reorder_level: number;
 }
 
-// ── FIX: Added stock adjustment types ────────────────────────────────────────
+/** FIX: Added stock adjustment types */
 
 export type MovementType =
   | "restock"
@@ -207,9 +228,9 @@ export async function fetchAPI<T>(
     const payload = await parseErrorPayload(response);
     const message =
       typeof payload === "object" &&
-        payload !== null &&
-        "detail" in payload &&
-        typeof (payload as Record<string, unknown>).detail === "string"
+      payload !== null &&
+      "detail" in payload &&
+      typeof (payload as Record<string, unknown>).detail === "string"
         ? (payload as Record<string, string>).detail
         : `API Error (${response.status})`;
     throw new APIError(message, response.status, payload);
@@ -279,12 +300,33 @@ function mapProductCategory(category: ApiCategory): ProductCategory {
   };
 }
 
+function mapProductSeo(seo: ApiProductSeoPublic | null | undefined): ProductSeoContent | null {
+  if (!seo) return null;
+  return {
+    seoTitle: seo.seo_title,
+    metaDescription: seo.meta_description,
+    introduction: seo.introduction,
+    features: seo.features,
+    benefits: seo.benefits,
+    technicalSpecifications: seo.technical_specifications,
+    applications: seo.applications,
+    industriesServed: seo.industries_served,
+    faqs: seo.faqs,
+    ctaText: seo.cta_text,
+    internalLinks: seo.internal_links,
+    imageAltText: seo.image_alt_text,
+    imageTitle: seo.image_title,
+    imageCaption: seo.image_caption,
+    imageDescription: seo.image_description,
+  };
+}
+
 function mapProduct(product: ApiProduct): Product {
   const imageUrls = Array.isArray(product.image_urls)
     ? product.image_urls.filter((value): value is string => typeof value === "string" && value.length > 0)
     : product.image_url
-      ? [product.image_url]
-      : [];
+    ? [product.image_url]
+    : [];
 
   return {
     id: product.id,
@@ -298,6 +340,7 @@ function mapProduct(product: ApiProduct): Product {
     isActive: product.is_active,
     featured: product.featured,
     specs: product.specs,
+    seo: mapProductSeo(product.seo),
     createdAt: product.created_at,
     updatedAt: product.updated_at,
   };
@@ -328,7 +371,7 @@ export async function getCategories() {
   return categories.map(mapCategory);
 }
 
-// ── Public API: Products ──────────────────────────────────────────────────────
+// ── Public API: Products ────────────────────────────────────────────────────
 
 export async function getProducts(options: ProductQueryOptions = {}) {
   const params = new URLSearchParams();
@@ -457,7 +500,7 @@ export async function getAdminOverview() {
   return authFetchAPI<AdminOverviewResponse>("/admin/dashboard/overview", { next: { revalidate: 0 } });
 }
 
-// ── Admin API: Products ───────────────────────────────────────────────────────
+// ── Admin API: Products ──────────────────────────────────────────────────────
 
 export async function getAdminProducts() {
   return authFetchAPI<PaginatedResponse<ApiProduct>>("/admin/products", { next: { revalidate: 0 } });
@@ -483,7 +526,7 @@ export async function deleteAdminProduct(id: number) {
   return authFetchAPI(`/admin/products/${id}`, { method: "DELETE" });
 }
 
-// ── Admin API: Categories ─────────────────────────────────────────────────────
+// ── Admin API: Categories ────────────────────────────────────────────────────
 
 export async function getAdminCategories() {
   return authFetchAPI<ApiCategory[]>("/admin/categories", { next: { revalidate: 0 } });
@@ -601,12 +644,12 @@ export async function getAdminStockMovements(options?: {
   if (options?.type) params.set("type", options.type);
   if (options?.search) params.set("search", options.search);
   const query = params.toString();
-  return authFetchAPI<ApiStockMovement[]>(
+  return await fetchAPI<ApiStockMovement[]>(
     query ? `/admin/stock-movements/?${query}` : "/admin/stock-movements/",
   );
 }
 
-// ── Admin API: Standalone Inventory (CSV-driven, persisted to DB) ────────────
+// ── Admin API: Standalone Inventory (CSV-driven, persisted to DB) ────────
 
 /** Shape returned by GET /admin/standalone-inventory/ */
 export interface ApiStandaloneInventoryItem {
@@ -738,7 +781,7 @@ export async function getStandaloneInventory(): Promise<StandaloneInventoryItem[
 export async function bulkImportStandaloneInventory(
   payload: BulkImportPayload,
 ): Promise<BulkImportResponse> {
-  return authFetchAPI<BulkImportResponse>("/admin/standalone-inventory/bulk-import/", {
+  return await fetchAPI<BulkImportResponse>("/admin/standalone-inventory/bulk-import/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -791,14 +834,14 @@ export async function adjustStandaloneInventoryStock(
   id: number,
   payload: StandaloneStockAdjustPayload,
 ): Promise<StandaloneStockAdjustResponse> {
-  return authFetchAPI<StandaloneStockAdjustResponse>(`/admin/standalone-inventory/${id}/adjust/`, {
+  return await fetchAPI<StandaloneStockAdjustResponse>(`/admin/standalone-inventory/${id}/adjust/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
 }
 
-// ── Admin API: Google Sheets Sync ───────────────────────────────────────────
+// ── Admin API: Google Sheets Sync ────────────────────────────────────────
 
 export interface SyncLogData {
   id: number;
@@ -855,9 +898,9 @@ export async function getSheetsSyncLogs(options?: { status?: string; limit?: num
   if (options?.limit) params.set("limit", String(options.limit));
   const query = params.toString();
 
-  return authFetchAPI<{ logs: SyncLogData[]; count: number }>(
+  return await fetchAPI<{ logs: SyncLogData[]; count: number }>(
     query ? `/admin/sheets/logs?${query}` : "/admin/sheets/logs",
-    { next: { revalidate: 0 } }
+    { next: { revalidate: 0 } },
   );
 }
 
@@ -892,7 +935,7 @@ export async function retryFailedSyncJobs(): Promise<{ detail: string; retried: 
   });
 }
 
-// ── Admin API: System ─────────────────────────────────────────────────────────
+// ── Admin API: System ────────────────────────────────────────────────────────
 
 export async function getHealthStatus() {
   return fetchAPI<{
@@ -917,7 +960,7 @@ export async function uploadAdminImage(file: File) {
   });
 }
 
-// ── Admin API: AI ─────────────────────────────────────────────────────────────
+// ── Admin API: AI ───────────────────────────────────────────────────────────
 
 export interface AIProductResponse {
   name: string;
@@ -956,7 +999,7 @@ export async function generateProductWithAI({
   });
 }
 
-// ── Admin API: SEO Optimizer (Phase 1: single-product pipeline) ────────────────
+// ── Admin API: SEO Optimizer (Phase 1: single-product pipeline) ─────────────
 
 export interface ApiSeoFaq {
   question: string;
@@ -1087,6 +1130,28 @@ export async function applyProductSeoDraft(productId: number) {
   }>(`/admin/seo/products/${productId}/apply`, { method: "POST" });
 }
 
+export async function saveProductSeoDraft(productId: number, updates: Partial<ApiSeoContent>) {
+  return authFetchAPI<{ draft: ApiSeoContent; score: ApiSeoScore }>(
+    `/admin/seo/products/${productId}/draft`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    },
+  );
+}
+
+export async function applySeoIssueFix(productId: number, issueId: string) {
+  return authFetchAPI<{ draft: ApiSeoContent; score: ApiSeoScore; fixed_field: string; fixed_value: unknown }>(
+    `/admin/seo/products/${productId}/fix`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ issue_id: issueId }),
+    },
+  );
+}
+
 export async function getProductSeoVersions(productId: number) {
   return authFetchAPI<ApiSeoVersion[]>(`/admin/seo/products/${productId}/versions`, {
     next: { revalidate: 0 },
@@ -1104,7 +1169,7 @@ export async function getSeoDashboard() {
   return authFetchAPI<ApiSeoDashboard>("/admin/seo/dashboard", { next: { revalidate: 0 } });
 }
 
-// ── Admin API: SEO Optimizer — bulk regeneration (Phase 2) ─────────────────────
+// ── Admin API: SEO Optimizer — bulk regeneration (Phase 2) ─────────────────
 
 export type SeoBulkScope = "all" | "category" | "never_generated" | "low_score";
 
@@ -1173,9 +1238,10 @@ export async function retrySeoBulkFailed(batchId?: string) {
   });
 }
 
-// ── Admin API: Image Protection & Watermark Management ─────────────────────────
+// ── Admin API: Image Protection & Watermark Management ─────────────────────
 
 export interface ApiImageProtectionSettings {
+  watermark_color: string;
   watermark_enabled: boolean;
   right_click_protection_enabled: boolean;
   drag_protection_enabled: boolean;
@@ -1244,6 +1310,7 @@ export interface ApiWatermarkPreviewOverrides {
   watermark_font_size?: number;
   watermark_angle?: number;
   watermark_position?: "center" | "tiled";
+  watermark_color?: string;
   product_id?: number;
 }
 

@@ -95,11 +95,17 @@ class WatermarkPreviewView(JWTAdminMixin, APIView):
             sample_product = get_object_or_404(Product, pk=product_id)
         else:
             sample_product = (
-                Product.objects.filter(is_active=True)
-                .exclude(image_url="")
+                Product.objects.filter(is_active=True, image_url__icontains="cloudinary.com")
                 .order_by("-updated_at")
                 .first()
             )
+            if not sample_product:
+                sample_product = (
+                    Product.objects.filter(is_active=True)
+                    .exclude(image_url="")
+                    .order_by("-updated_at")
+                    .first()
+                )
 
         if sample_product is None or not sample_product.image_url:
             return Response(

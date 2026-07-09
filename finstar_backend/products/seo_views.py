@@ -17,6 +17,7 @@ from .ai_service import AIServiceError
 from .models import Product, ProductSEO, SEORegenerationJob, SEOVersion
 from .serializers import SEOProductSummarySerializer, SEOVersionSerializer
 from .seo_ai_service import CONTENT_FIELDS, REQUIRED_KEYS, generate_seo_content
+from .seo_fix_service import annotate_fixable, apply_issue_fix
 from .seo_schema_builder import build_all_schemas
 from .seo_scoring import score_seo_content
 from .services.seo_bulk import enqueue_seo_bulk_jobs
@@ -65,7 +66,7 @@ class SEOGenerateDraftView(JWTAdminMixin, APIView):
         content["internal_links"] = ai_data["internal_links"]
         content.update(schemas)
 
-        score = score_seo_content(product, content)
+        score = annotate_fixable(score_seo_content(product, content))
 
         seo.draft = {**content, "score": score}
         seo.generated_at = timezone.now()
@@ -159,7 +160,7 @@ class SEOApplyDraftView(JWTAdminMixin, APIView):
             version_id = version.id
 
         content = {field: seo.draft.get(field) for field in CONTENT_FIELDS}
-        score = score_seo_content(product, content)
+        score = annotate_fixable(score_seo_content(product, content))
 
         for field in CONTENT_FIELDS:
             setattr(seo, field, content[field])
@@ -178,6 +179,85 @@ class SEOApplyDraftView(JWTAdminMixin, APIView):
             "live_score": score,
             "version_created": version_created,
             "version_id": version_id,
+        })
+
+
+class SEOSaveDraftView(JWTAdminMixin, APIView):
+    """
+    PATCH /api/admin/seo/products/<id>/draft — persist manual edits to the
+    pending draft (creating one from the current live content if none
+    exists yet). Never touches live content — use Apply Draft for that.
+    """
+
+    def patch(self, request, product_id):
+        product = get_object_or_404(Product, pk=product_id)
+        seo, _ = ProductSEO.objects.get_or_create(product=product)
+
+        base = seo.draft if seo.draft else _live_content_dict(seo)
+        content = {field: base.get(field) for field in CONTENT_FIELDS}
+
+        updates = request.data or {}
+        unknown = set(updates.keys()) - set(CONTENT_FIELDS)
+        if unknown:
+            return Response(
+                {"detail": f"Unknown field(s): {', '.join(sorted(unknown))}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        content.update({key: value for key, value in updates.items() if key in CONTENT_FIELDS})
+
+        score = annotate_fixable(score_seo_content(product, content))
+        seo.draft = {**content, "score": score}
+        seo.save(update_fields=["draft", "updated_at"])
+
+        return Response({"draft": content, "score": score})
+
+
+class SEOFixIssueView(JWTAdminMixin, APIView):
+    """
+    POST /api/admin/seo/products/<id>/fix — resolve a single detected SEO
+    issue against the pending draft (creating one from live content if
+    none exists). Body: {"issue_id": "..."}.
+    """
+
+    def post(self, request, product_id):
+        product = get_object_or_404(Product, pk=product_id)
+        seo = get_object_or_404(ProductSEO, product=product)
+
+        issue_id = request.data.get("issue_id")
+        if not issue_id:
+            return Response({"detail": "issue_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        base = seo.draft if seo.draft else _live_content_dict(seo)
+        content = {field: base.get(field) for field in CONTENT_FIELDS}
+
+        current_score = score_seo_content(product, content)
+        issue = next((i for i in current_score["issues"] if i.get("id") == issue_id), None)
+        if issue is None:
+            # Issue is already resolved in the current draft — return the up-to-date
+            # state instead of an error so stale UIs can refresh cleanly.
+            score = annotate_fixable(current_score)
+            return Response({
+                "draft": content,
+                "score": score,
+                "already_resolved": True,
+                "detail": f"Issue '{issue_id}' is already resolved in the current draft.",
+            })
+
+        try:
+            field, new_value = apply_issue_fix(product, content, issue)
+        except AIServiceError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        content[field] = new_value
+        score = annotate_fixable(score_seo_content(product, content))
+        seo.draft = {**content, "score": score}
+        seo.save(update_fields=["draft", "updated_at"])
+
+        return Response({
+            "draft": content,
+            "score": score,
+            "fixed_field": field,
+            "fixed_value": new_value,
         })
 
 
@@ -214,7 +294,7 @@ class SEORestoreVersionView(JWTAdminMixin, APIView):
             )
 
         content = {field: version.snapshot.get(field) for field in CONTENT_FIELDS}
-        score = score_seo_content(product, content)
+        score = annotate_fixable(score_seo_content(product, content))
 
         for field in CONTENT_FIELDS:
             setattr(seo, field, content[field])

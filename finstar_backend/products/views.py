@@ -341,7 +341,7 @@ class ProductDetailView(generics.RetrieveAPIView):
     Retrieve a single active product by slug.
     """
     serializer_class = ProductSerializer
-    queryset = Product.objects.select_related("category", "image_protection").filter(is_active=True)
+    queryset = Product.objects.select_related("category", "image_protection", "seo").filter(is_active=True)
     lookup_field = "slug"
 
 

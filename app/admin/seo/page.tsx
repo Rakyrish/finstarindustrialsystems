@@ -8,6 +8,8 @@ import {
   getProductSeo,
   generateProductSeoDraft,
   applyProductSeoDraft,
+  saveProductSeoDraft,
+  applySeoIssueFix,
   getProductSeoVersions,
   restoreProductSeoVersion,
   type ApiProduct,
@@ -228,11 +230,13 @@ function SeoOptimizerWorkspace() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [applying, setApplying] = useState(false);
+  const [generatingAndApplying, setGeneratingAndApplying] = useState(false);
 
   const [versions, setVersions] = useState<ApiSeoVersion[]>([]);
   const [restoringId, setRestoringId] = useState<number | null>(null);
   const [editingDraft, setEditingDraft] = useState<ApiSeoContent | null>(null);
   const [editLoading, setEditLoading] = useState(false);
+  const [fixingIssueId, setFixingIssueId] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -317,6 +321,25 @@ function SeoOptimizerWorkspace() {
     }
   };
 
+  const handleGenerateAndPublish = async () => {
+    if (!selectedProductId) return;
+    if (!window.confirm("Regenerate this product's SEO content with AI and publish it live immediately? The current live content will be backed up first, and you can restore it from Version History. The product's slug and URL are never changed.")) return;
+    setGeneratingAndApplying(true);
+    try {
+      await generateProductSeoDraft(selectedProductId);
+      await applyProductSeoDraft(selectedProductId);
+      addToast("SEO content regenerated and published live.", "success");
+      await loadDetail(selectedProductId);
+      if (typeof router.refresh === "function") {
+        router.refresh();
+      }
+    } catch {
+      addToast("Failed to regenerate and publish SEO content.", "error");
+    } finally {
+      setGeneratingAndApplying(false);
+    }
+  };
+
   const handleApply = async () => {
     if (!selectedProductId) return;
     if (!window.confirm("Publish this draft as the live SEO content for this product? The current live content will be backed up.")) return;
@@ -356,15 +379,14 @@ function SeoOptimizerWorkspace() {
   };
 
   const handleSaveDraftEdit = async (updatedDraft: ApiSeoContent) => {
+    if (!selectedProductId) return;
     try {
       setEditLoading(true);
-      // In a real implementation, this would update the draft in the database
-      // For now, we'll just update the local state and show a success message
+      await saveProductSeoDraft(selectedProductId, updatedDraft);
       setEditingDraft(null);
-      addToast("SEO draft updated successfully!", "success");
-      // Refresh the data to reflect the changes
-      await loadDetail(selectedProductId!);
-    } catch (error) {
+      addToast("SEO draft saved.", "success");
+      await loadDetail(selectedProductId);
+    } catch {
       addToast("Failed to save SEO draft edits.", "error");
     } finally {
       setEditLoading(false);
@@ -373,6 +395,25 @@ function SeoOptimizerWorkspace() {
 
   const handleCancelEdit = () => {
     setEditingDraft(null);
+  };
+
+  const handleApplyIssueFix = async (issueId: string) => {
+    if (!selectedProductId) return;
+    setFixingIssueId(issueId);
+    try {
+      const result = await applySeoIssueFix(selectedProductId, issueId);
+      if ((result as { already_resolved?: boolean }).already_resolved) {
+        addToast("That issue is already resolved in the draft — refreshing.", "info");
+      } else {
+        const label = FIELD_LABELS.find((f) => f.key === result.fixed_field)?.label ?? result.fixed_field;
+        addToast(`AI fix applied — updated ${label} in the draft.`, "success");
+      }
+      await loadDetail(selectedProductId);
+    } catch {
+      addToast("Failed to apply AI fix. Please try again.", "error");
+    } finally {
+      setFixingIssueId(null);
+    }
   };
 
   const selectedProduct = products.find((p) => p.id === selectedProductId);
@@ -457,14 +498,25 @@ function SeoOptimizerWorkspace() {
                       <div className="text-[11px] text-slate-400 mt-1 italic">Identity fields are immutable and never changed by SEO regeneration.</div>
                     </div>
                   </div>
-                  <button
-                    onClick={handleGenerate}
-                    disabled={generating || detailLoading}
-                    className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed shrink-0 cursor-pointer"
-                  >
-                    {generating ? <LoaderIcon /> : <SparkleIcon />}
-                    {generating ? "Generating…" : "Generate Draft"}
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={handleGenerate}
+                      disabled={generating || generatingAndApplying || detailLoading}
+                      className="inline-flex items-center gap-2 rounded-xl border border-orange-500 px-4 py-2.5 text-sm font-bold text-orange-600 dark:text-orange-400 transition hover:bg-orange-50 dark:hover:bg-orange-500/10 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {generating ? <LoaderIcon /> : <SparkleIcon />}
+                      {generating ? "Generating…" : "Generate Draft"}
+                    </button>
+                    <button
+                      onClick={handleGenerateAndPublish}
+                      disabled={generating || generatingAndApplying || detailLoading}
+                      title="Regenerate with AI and publish live in one step — the current live content is backed up first."
+                      className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {generatingAndApplying ? <LoaderIcon /> : <CheckIcon />}
+                      {generatingAndApplying ? "Publishing…" : "Regenerate & Publish"}
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -478,26 +530,26 @@ function SeoOptimizerWorkspace() {
                   <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-5 shadow-sm flex flex-wrap items-center gap-6">
                     <ScoreBadge score={detail.live_score?.overall} label="Live Score" />
                     <ScoreBadge score={detail.draft_score?.overall} label="Draft Score" />
-                    {detail.has_pending_draft && (
-                      <button
-                        onClick={handleApply}
-                        disabled={applying}
-                        className="ml-auto inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-green-600/20 transition hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                      >
-                        {applying ? <LoaderIcon /> : <CheckIcon />}
-                        {applying ? "Applying…" : "Apply Draft"}
-                      </button>
-                    )}
-                    {!detail.has_pending_draft && detail.draft && (
-                      <button
-                        onClick={() => {
-                          setEditingDraft(detail.draft);
-                        }}
-                        className="ml-auto inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                      >
-                        <EditIcon className="mr-2" />
-                        Edit Draft
-                      </button>
+                    {detail.draft && (
+                      <div className="ml-auto flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingDraft(detail.draft);
+                          }}
+                          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          <EditIcon className="mr-2" />
+                          Edit Draft
+                        </button>
+                        <button
+                          onClick={handleApply}
+                          disabled={applying}
+                          className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-green-600/20 transition hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                        >
+                          {applying ? <LoaderIcon /> : <CheckIcon />}
+                          {applying ? "Applying…" : "Apply Draft"}
+                        </button>
+                      </div>
                     )}
                   </div>
 
@@ -507,7 +559,7 @@ function SeoOptimizerWorkspace() {
                       <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-6 shadow-sm">
                         <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">SEO Score Breakdown</h3>
                         <div className="grid gap-4 md:grid-cols-2">
-                          {Object.entries(detail.live_score.breakdown).map(([dimension, score]) => {
+                          {Object.entries((detail.draft_score ?? detail.live_score).breakdown).map(([dimension, score]) => {
                             const dimensionLabels: Record<string, string> = {
                               title_optimization: "Title Optimization",
                               meta_optimization: "Meta Optimization",
@@ -539,11 +591,16 @@ function SeoOptimizerWorkspace() {
                         </div>
                       </div>
 
-                      {detail.live_score.issues.length > 0 && (
+                      {((detail.draft_score ?? detail.live_score).issues.length > 0) && (
                         <div className="mt-6">
-                          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">SEO Issues & Recommendations</h3>
+                          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">
+                            SEO Issues & Recommendations
+                            {detail.draft_score && (
+                              <span className="ml-2 text-xs font-normal text-slate-400">(showing draft score)</span>
+                            )}
+                          </h3>
                           <div className="space-y-4">
-                            {detail.live_score.issues.map((issue) => (
+                            {(detail.draft_score ?? detail.live_score).issues.map((issue) => (
                               <div key={issue.id} className="border-l-4 pl-4 border-red-500/20 dark:border-red-500/30 bg-white/50 dark:bg-white/10 p-4 rounded-lg shadow-sm">
                                 <div className="flex items-start gap-4">
                                   <div className="flex-shrink-0">
@@ -578,17 +635,15 @@ function SeoOptimizerWorkspace() {
                                     <div className="mt-3 flex items-center gap-3">
                                       <span className="text-sm text-slate-600 dark:text-slate-400">Suggested Fix:</span>
                                       <button
-                                        onClick={() => {
-                                          // In a real implementation, this would apply the auto-fix
-                                          // For now, we'll show a toast
-                                          addToast(`Applied fix: ${issue.recommended_fix}`, "success");
-                                        }}
-                                        disabled={!issue.auto_fixable}
+                                        onClick={() => handleApplyIssueFix(issue.id)}
+                                        disabled={!issue.auto_fixable || fixingIssueId === issue.id}
                                         className={issue.auto_fixable
                                           ? "inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium rounded-lg border border-transparent bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                           : "inline-flex items-center gap-1.5 px-3 py-1 text-sm font-medium rounded-lg border border-transparent bg-gray-300 text-gray-500 cursor-not-allowed"
                                     }>
-                                        {issue.auto_fixable ? "Apply Fix" : "Manual Edit"}
+                                        {fixingIssueId === issue.id
+                                          ? "Applying…"
+                                          : issue.auto_fixable ? "Apply AI Fix" : "Manual Edit"}
                                       </button>
                                     </div>
                                   </div>
@@ -994,11 +1049,6 @@ function SeoDraftEditor({
                 {renderFieldValueEditor(value, kind, (updatedValue) =>
                   setFormData(prev => prev ? {...prev, [key]: updatedValue} : formData)
                 )}
-                {value !== null && value !== undefined && typeof value === 'string' && value.length > 0 && (
-                  <p className="text-xs text-slate-500 dark:text-slate-400 italic mt-1">
-                    Current: "{value}"
-                  </p>
-                )}
               </div>
             );
           })}
@@ -1014,12 +1064,14 @@ function renderFieldValueEditor(value: unknown, kind: string, onChange: (updated
       case "text":
         return <input
           type="text"
+          value={typeof value === 'string' ? value : ''}
           placeholder="Enter value..."
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
         />;
       case "textarea":
         return <textarea
+          value={typeof value === 'string' ? value : ''}
           placeholder="Enter value..."
           rows={3}
           onChange={(e) => onChange(e.target.value)}
