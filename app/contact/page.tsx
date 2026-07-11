@@ -7,7 +7,13 @@ import { BreadcrumbJsonLd, ContactPageJsonLd, FAQJsonLd } from "@/components/Jso
 import ContactForm from "./ContactForm";
 
 import ContactButtons from "@/components/ContactButtons";
-import { buildPageMetadata, contactFaqs, type BreadcrumbItem } from "@/lib/seo";
+import {
+  buildPageMetadata,
+  contactFaqs,
+  GOOGLE_MAPS_DIRECTIONS_URL,
+  GOOGLE_MAPS_EMBED_URL,
+  type BreadcrumbItem,
+} from "@/lib/seo";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Contact Finstar Industrial Systems Ltd in Nairobi, Kenya",
@@ -138,7 +144,7 @@ export default function ContactPage() {
                 <ContactButtons />
 
                 <a
-                  href="https://www.google.com/maps/place/Finstar+Industrial+Systems+Ltd/@-1.3050988,36.8390376,837m/data=!3m2!1e3!4b1!4m6!3m5!1s0x182f11c670b98d43:0x6f348874e48071b5!8m2!3d-1.3050988!4d36.8390376!16s%2Fg%2F11x8c2x1hk?entry=ttu&g_ep=EgoyMDI2MDQyNy4wIKXMDSoASAFQAw%3D%3D"
+                  href={GOOGLE_MAPS_DIRECTIONS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/30 bg-white/10 px-8 py-4 text-base font-bold text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/20"
@@ -186,7 +192,7 @@ export default function ContactPage() {
                 loading="lazy"
                 allowFullScreen
                 referrerPolicy="no-referrer-when-downgrade"
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.8565!2d36.8390376!3d-1.3050988!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f11c670b98d43%3A0x6f348874e48071b5!2sFinstar%20Industrial%20Systems%20Ltd!5e0!3m2!1sen!2ske!4v1680000000000!5m2!1sen!2ske"
+                src={GOOGLE_MAPS_EMBED_URL}
               ></iframe>
             </div>
           </div>

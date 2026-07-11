@@ -66,6 +66,10 @@ class PublicProductSEOSerializer(serializers.ModelSerializer):
             "image_title",
             "image_caption",
             "image_description",
+            "canonical_url",
+            "focus_keyword",
+            "secondary_keywords",
+            "long_tail_keywords",
         ]
 
 
@@ -84,6 +88,7 @@ class ProductSerializer(serializers.ModelSerializer):
             "slug",
             "description",
             "short_description",
+            "brand",
             "category",
             "image_url",
             "is_active",
@@ -119,6 +124,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             "name",
             "slug",
             "short_description",
+            "brand",
             "category",
             "image_url",
             "is_active",
@@ -152,6 +158,7 @@ class AdminProductSerializer(serializers.ModelSerializer):
             "slug",
             "description",
             "short_description",
+            "brand",
             "category",
             "category_id",
             "image_url",
@@ -166,6 +173,7 @@ class AdminProductSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "slug": {"required": False, "allow_blank": True},
             "short_description": {"required": False},
+            "brand": {"required": False, "allow_blank": True},
             "image_url": {"required": False, "allow_blank": True},
             "featured": {"required": False},
             "specs": {"required": False},

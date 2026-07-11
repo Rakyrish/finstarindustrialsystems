@@ -42,7 +42,10 @@ STRICT RULES
 - NEVER include URLs, hyperlinks, or slugs — those are added separately by the system.
 - Mention "Finstar Industrial Systems Ltd" naturally 3-5 times across the whole profile, not just once.
 - Mention "Kenya" and at least 3 other East/Central African countries from the list above.
-- Tone: professional, persuasive, industrial/B2B, benefit-driven. Active voice. Max ~20 words per sentence.
+- Tone: professional, persuasive, industrial/B2B, benefit-driven. Active voice. 12-20 words per sentence on average — vary it, but never write a single sentence over 40 words.
+- The meta_description MUST contain the exact focus_keyword phrase verbatim — the same characters, in the same order, copied in exactly as you chose it. Do not paraphrase, reorder its words, or split it up.
+- EVERY item in "features", "benefits", and "applications" must be written as one complete, grammatically standalone sentence ending in a period — not a sentence fragment. These lists get concatenated together for analysis elsewhere, so a fragment with no closing period silently merges into the next item and produces one unreadable run-on sentence; a period is what keeps each item readable on its own.
+- The combined word count of introduction + features + benefits + applications + faqs must add up to 650+ words total — this is what determines whether the content is "thin." Use the higher end of every list-length range below, and don't pad with filler; add genuine, specific detail (use cases, operating conditions, buyer considerations) instead.
 
 ──────────────────────────────────────
 RETURN FORMAT
@@ -52,18 +55,18 @@ Return ONLY a valid JSON object (no markdown, no code fences, no commentary) wit
 
 {
   "seo_title": "50-60 characters, includes focus keyword, product name, and 'Kenya' or a region",
-  "meta_description": "140-160 characters, includes focus keyword, a benefit, and a call to action",
+  "meta_description": "140-160 characters, must contain the exact focus_keyword phrase verbatim, plus a benefit and a call to action",
   "focus_keyword": "the single primary keyword phrase this product should rank for",
   "secondary_keywords": ["5-8 related keyword phrases"],
   "long_tail_keywords": ["5-8 longer, more specific search phrases including buyer intent (price, supplier, wholesale, distributor, location)"],
-  "introduction": "150-250 word HTML string (use <p> tags only) introducing the product, its purpose, and Finstar as the supplier",
-  "features": ["6-10 short feature bullet strings, each starting with the feature name"],
-  "benefits": ["6-10 short benefit bullet strings framed around business value (reliability, efficiency, cost savings, compliance)"],
+  "introduction": "350-450 word HTML string (2-3 <p> tags) introducing the product, its purpose, typical operating conditions/use cases, and Finstar as the supplier — this is the main lever for total content depth, so make it substantive, not padded",
+  "features": ["8-10 feature sentences, each a complete sentence ending in a period, starting with the feature name"],
+  "benefits": ["8-10 benefit sentences, each a complete sentence ending in a period, framed around business value (reliability, efficiency, cost savings, compliance)"],
   "technical_specifications": {"Spec Name": "Spec Value", "...": "..."},
-  "applications": ["5-8 short strings describing specific use cases"],
+  "applications": ["6-8 complete sentences ending in a period, each describing a specific use case"],
   "industries_served": ["5-8 industry names, e.g. Food Processing, Hospitality, Pharmaceuticals, Manufacturing"],
   "delivery_locations": ["Kenya", "Uganda", "Tanzania", "Rwanda", "Burundi", "South Sudan", "DR Congo", "Ethiopia", "Somalia"],
-  "faqs": [{"question": "...", "answer": "..."}, "5-7 question/answer pairs covering pricing, availability, delivery, installation, and suitability"],
+  "faqs": [{"question": "...", "answer": "..."}, "6-8 question/answer pairs (each answer 2-3 full sentences) covering pricing, availability, delivery, installation, and suitability"],
   "cta_text": "1-2 sentence call to action inviting the buyer to request a quote from Finstar Industrial Systems Ltd",
   "image_seo_filename": "seo-friendly-kebab-case-filename-without-extension",
   "image_alt_text": "descriptive alt text under 125 characters including product name and Finstar",
@@ -190,7 +193,7 @@ def generate_seo_content(product) -> dict:
         response = client.chat.completions.create(
             model=model,
             messages=messages,
-            max_tokens=3500,
+            max_tokens=4500,
             temperature=0.4,
         )
     except Exception as exc:

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import EmptyState from "@/components/EmptyState";
 import FAQSection from "@/components/FAQSection";
-import { FAQJsonLd, ReviewAggregateJsonLd, ServicesJsonLd } from "@/components/JsonLd";
+import { FAQJsonLd, ServicesJsonLd } from "@/components/JsonLd";
 import FeaturedProducts from "@/components/FeaturedProducts";
 import SectionWrapper, { SectionHeader } from "@/components/SectionWrapper";
 import ClientsSection, { type Client } from "@/components/ClientsSection"
@@ -13,7 +13,7 @@ import ProductsClient from "./products/ProductsClient";
 import ProductCardSkeleton from "@/components/ProductCardSkeleton";
 import { getCategories, fetchAllProducts } from "@/lib/api";
 import { services } from "@/lib/data";
-import { buildPageMetadata, homepageFaqs, SITE_URL } from "@/lib/seo";
+import { buildPageMetadata, GOOGLE_MAPS_DIRECTIONS_URL, homepageFaqs, SITE_URL } from "@/lib/seo";
 import { Category, Product } from "@/types";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -129,9 +129,7 @@ export default async function HomePage() {
     <>
       <FAQJsonLd faqs={homepageFaqs} />
       <ServicesJsonLd services={services.map((service) => ({ title: service.title, description: service.description }))} />
-      {totalRatings > 0 && (
-        <ReviewAggregateJsonLd ratingValue={overallRating} reviewCount={totalRatings} />
-      )}
+      {/* Aggregate rating is now emitted site-wide via LocalBusinessJsonLd in app/layout.tsx */}
 
       {/* ── 1. HERO ──────────────────────────────────────────────────────────── */}
       <section className="relative flex min-h-[85vh] items-center justify-center overflow-hidden">
@@ -391,7 +389,7 @@ export default async function HomePage() {
               Browse Products
             </Link>
             <a
-              href="https://www.google.com/maps/place/Finstar+Industrial+Systems+Ltd/@-1.3050988,36.8390376,837m/data=!3m2!1e3!4b1!4m6!3m5!1s0x182f11c670b98d43:0x6f348874e48071b5!8m2!3d-1.3050988!4d36.8390376!16s%2Fg%2F11x8c2x1hk?entry=ttu&g_ep=EgoyMDI2MDQyNy4wIKXMDSoASAFQAw%3D%3D"
+              href={GOOGLE_MAPS_DIRECTIONS_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/30 bg-white/10 px-8 py-4 text-base font-bold text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/20"

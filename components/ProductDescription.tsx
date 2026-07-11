@@ -1,5 +1,7 @@
 "use client";
 
+import { sanitizeProductHtml } from "@/lib/sanitizeHtml";
+
 interface ProductDescriptionProps {
   content: string;
   className?: string;
@@ -7,24 +9,6 @@ interface ProductDescriptionProps {
 
 function containsHTML(value: string) {
   return /<[a-z][\s\S]*>/i.test(value);
-}
-
-function sanitiseHTML(html: string) {
-  return html
-    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
-    .replace(/<(?:iframe|object|embed|form|base)\b[^>]*>[\s\S]*?<\/(?:iframe|object|embed|form|base)>/gi, "")
-    .replace(/<(?:iframe|object|embed|form|base)\b[^>]*\/?>/gi, "")
-    .replace(/\s+on[a-z-]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-    .replace(
-      /\s+(href|src)\s*=\s*(["']?)([^"'\s>]+)\2/gi,
-      (_, attribute: string, quote: string, value: string) => {
-        if (/^\s*javascript:/i.test(value)) {
-          return "";
-        }
-        return ` ${attribute}=${quote}${value}${quote}`;
-      },
-    );
 }
 
 function normaliseLists(html: string) {
@@ -63,7 +47,7 @@ function wrapTables(html: string) {
 }
 
 function normaliseHTML(html: string) {
-  return wrapTables(normaliseLists(sanitiseHTML(html)));
+  return wrapTables(normaliseLists(sanitizeProductHtml(html)));
 }
 
 export default function ProductDescription({

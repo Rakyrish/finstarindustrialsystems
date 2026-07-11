@@ -29,11 +29,16 @@ def build_product_schema(product, seo_data: dict) -> dict:
         "description": seo_data.get("meta_description") or product.short_description,
         "category": product.category.name if product.category_id else "",
         "url": _absolute_url(f"/products/{product.slug}"),
-        "brand": {
-            "@type": "Brand",
+        "manufacturer": {
+            "@type": "Organization",
             "name": SITE_NAME,
         },
     }
+    # Real manufacturer/OEM brand only — never Finstar, the reseller. Omit
+    # the field entirely until a product has a confirmed brand, matching the
+    # same fix applied to components/JsonLd.tsx's ProductJsonLd.
+    if getattr(product, "brand", ""):
+        schema["brand"] = {"@type": "Brand", "name": product.brand}
     if product.image_url:
         schema["image"] = product.image_url
     return schema

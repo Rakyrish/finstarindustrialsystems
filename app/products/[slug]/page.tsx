@@ -185,13 +185,24 @@ export default async function ProductDetailPage({ params }: ProductDetailPagePro
                 <h2 className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-slate-700 dark:text-slate-300">
                   Technical Specifications
                 </h2>
-                <div className="space-y-2">
-                  {Object.entries(displaySpecs).map(([key, value]) => (
-                    <div key={key} className="flex items-start gap-3 text-sm">
-                      <span className="w-40 shrink-0 font-medium text-slate-400 dark:text-slate-500">{key}</span>
-                      <span className="font-semibold text-slate-700 dark:text-slate-300">{value}</span>
-                    </div>
-                  ))}
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-sm">
+                    <tbody>
+                      {Object.entries(displaySpecs).map(([key, value]) => (
+                        <tr key={key} className="border-b border-slate-200 last:border-0 dark:border-slate-700">
+                          <th
+                            scope="row"
+                            className="w-40 shrink-0 py-2 pr-3 text-left align-top font-medium text-slate-400 dark:text-slate-500"
+                          >
+                            {key}
+                          </th>
+                          <td className="py-2 align-top font-semibold text-slate-700 dark:text-slate-300">
+                            {value}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}

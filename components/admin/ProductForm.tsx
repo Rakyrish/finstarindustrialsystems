@@ -409,6 +409,7 @@ export function ProductForm({
   const [formData, setFormData] = useState({
     name: product?.name ?? "",
     short_description: product?.short_description ?? "",
+    brand: product?.brand ?? "",
     description: product?.description ?? "",
     category_id: product?.category?.id ?? categories[0]?.id ?? 0,
     featured: product?.featured ?? false,
@@ -553,6 +554,7 @@ export function ProductForm({
         ...formData,
         name: trimmedName,
         short_description: formData.short_description.trim(),
+        brand: formData.brand.trim(),
         description: formData.description.trim(),
         image_url: finalImageUrl,
       };
@@ -731,6 +733,23 @@ export function ProductForm({
             placeholder="Brief summary for product cards..."
             className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-orange-500 dark:border-white/10 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500"
           />
+        </div>
+
+        {/* ── Brand / Manufacturer ──────────────────────────────────────────── */}
+        <div>
+          <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+            Brand / Manufacturer
+          </label>
+          <input
+            type="text"
+            value={formData.brand}
+            onChange={(e) => setFormData((prev) => ({ ...prev, brand: e.target.value }))}
+            placeholder="e.g. Danfoss, Riello, Gree (leave blank if unknown — do not guess)"
+            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-slate-900 outline-none transition focus:border-orange-500 dark:border-white/10 dark:bg-slate-950 dark:text-white dark:placeholder:text-slate-500"
+          />
+          <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+            The real manufacturer/OEM brand — not Finstar. Used in Product schema so this item can rank for brand-name searches.
+          </p>
         </div>
 
         {/* ── Detailed Description ──────────────────────────────────────────── */}

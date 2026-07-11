@@ -180,12 +180,19 @@ def _score_meta(seo_data: dict) -> tuple:
     score = 0
     issues = []
 
-    # Length check
+    # Length check. Bucket by whether we're short/long of the 140-160 ideal
+    # range *before* picking near-miss (120-170) vs. far-miss (<120 or >170)
+    # — the previous version checked `length < 120` inside the branch that
+    # already required `length >= 120`, so it was dead code and every
+    # near-miss (including a perfectly reasonable 120-139 char description)
+    # fell through to "Meta Description Too Long" with a nonsensical
+    # negative "remove N characters" instruction.
+    is_short = length < 140
     if 140 <= length <= 160:
         score += 40
     elif 120 <= length <= 170:
         score += 25
-        if length < 120:
+        if is_short:
             issues.append({
                 "id": "meta_too_short",
                 "name": "Meta Description Too Short",
@@ -197,7 +204,7 @@ def _score_meta(seo_data: dict) -> tuple:
                 "recommended_fix": f"Add {140 - length} more characters to reach optimal length",
                 "auto_fixable": True
             })
-        else:  # length > 170
+        else:
             issues.append({
                 "id": "meta_too_long",
                 "name": "Meta Description Too Long",

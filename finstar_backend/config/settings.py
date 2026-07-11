@@ -154,6 +154,16 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
     ],
+    # Scoped throttle for endpoints that trigger a billed OpenAI call —
+    # nothing previously capped how many of these a single (or compromised)
+    # admin credential could fire, which is an unbounded-cost exposure.
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.ScopedRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "seo_ai_generate": "20/hour",
+        "seo_ai_bulk": "5/hour",
+    },
 }
 
 # In development, also enable the browsable API

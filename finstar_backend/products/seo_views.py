@@ -18,6 +18,7 @@ from .models import Product, ProductSEO, SEORegenerationJob, SEOVersion
 from .serializers import SEOProductSummarySerializer, SEOVersionSerializer
 from .seo_ai_service import CONTENT_FIELDS, REQUIRED_KEYS, generate_seo_content
 from .seo_fix_service import annotate_fixable, apply_issue_fix
+from .seo_publish_service import blocks_auto_publish, publish_content
 from .seo_schema_builder import build_all_schemas
 from .seo_scoring import score_seo_content
 from .services.seo_bulk import enqueue_seo_bulk_jobs
@@ -49,37 +50,93 @@ def _next_version_number(product: Product) -> int:
     return (last.version_number + 1) if last else 1
 
 
+def _generate_and_save_draft(product: Product, seo: ProductSEO, user) -> tuple[dict, dict]:
+    """Shared by SEOGenerateDraftView and SEOGenerateAndPublishView. Raises AIServiceError."""
+    ai_data = generate_seo_content(product)
+
+    schemas = build_all_schemas(product, ai_data)
+    content = {key: ai_data[key] for key in REQUIRED_KEYS}
+    content["internal_links"] = ai_data["internal_links"]
+    content.update(schemas)
+
+    score = annotate_fixable(score_seo_content(product, content))
+
+    seo.draft = {**content, "score": score}
+    seo.generated_at = timezone.now()
+    seo.last_generated_by = user
+    seo.ai_model_used = ai_data.get("_ai_model_used", "")
+    seo.save(update_fields=[
+        "draft", "generated_at", "last_generated_by", "ai_model_used", "updated_at",
+    ])
+
+    return content, score
+
+
 class SEOGenerateDraftView(JWTAdminMixin, APIView):
     """POST /api/admin/seo/products/<id>/generate — generate a new pending draft."""
+
+    throttle_scope = "seo_ai_generate"
 
     def post(self, request, product_id):
         product = get_object_or_404(Product, pk=product_id)
         seo, _ = ProductSEO.objects.get_or_create(product=product)
 
         try:
-            ai_data = generate_seo_content(product)
+            content, score = _generate_and_save_draft(product, seo, request.user)
         except AIServiceError as exc:
             return Response({"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        schemas = build_all_schemas(product, ai_data)
-        content = {key: ai_data[key] for key in REQUIRED_KEYS}
-        content["internal_links"] = ai_data["internal_links"]
-        content.update(schemas)
-
-        score = annotate_fixable(score_seo_content(product, content))
-
-        seo.draft = {**content, "score": score}
-        seo.generated_at = timezone.now()
-        seo.last_generated_by = request.user
-        seo.ai_model_used = ai_data.get("_ai_model_used", "")
-        seo.save(update_fields=[
-            "draft", "generated_at", "last_generated_by", "ai_model_used", "updated_at",
-        ])
 
         return Response({
             "draft": content,
             "score": score,
             "generated_at": seo.generated_at,
+        })
+
+
+class SEOGenerateAndPublishView(JWTAdminMixin, APIView):
+    """
+    POST /api/admin/seo/products/<id>/generate-and-publish — the "Regenerate
+    & Publish" one-click flow. Generates a fresh draft exactly like
+    SEOGenerateDraftView, but only auto-applies it to the live site if the
+    score clears AUTO_PUBLISH_MIN_SCORE with no HIGH-severity issues.
+    Otherwise the draft is saved (so nothing generated is lost) but left
+    unpublished, same as a plain "Generate Draft" — the admin has to review
+    it and hit "Apply Draft" manually. Live content is never blindly
+    overwritten by content the tool's own scoring flags as a ranking risk.
+    """
+
+    throttle_scope = "seo_ai_generate"
+
+    def post(self, request, product_id):
+        product = get_object_or_404(Product, pk=product_id)
+        seo, _ = ProductSEO.objects.get_or_create(product=product)
+
+        try:
+            content, score = _generate_and_save_draft(product, seo, request.user)
+        except AIServiceError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        block_reason = blocks_auto_publish(score)
+        if block_reason:
+            return Response({
+                "draft": content,
+                "score": score,
+                "published": False,
+                "detail": f"Generated a draft, but held it back from auto-publish: {block_reason} "
+                          "Review it and click Apply Draft manually if you still want to publish it.",
+            })
+
+        version_created, version_id = publish_content(product, seo, content, score, request.user, CONTENT_FIELDS)
+
+        return Response({
+            "draft": content,
+            "score": score,
+            "published": True,
+            "live": content,
+            "live_score": score,
+            "version_created": version_created,
+            "version_id": version_id,
+            "detail": "SEO content regenerated and published live.",
         })
 
 
@@ -139,39 +196,14 @@ class SEOApplyDraftView(JWTAdminMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        version_created = False
-        version_id = None
-
-        if seo.published_at is not None:
-            snapshot = {
-                **_live_content_dict(seo),
-                "score_overall": seo.score_overall,
-                "seo_issues": seo.seo_issues,  # Include SEO issues in snapshot
-                "score_breakdown": seo.score_breakdown,
-            }
-            version = SEOVersion.objects.create(
-                product=product,
-                version_number=_next_version_number(product),
-                reason=SEOVersion.Reason.PRE_APPLY,
-                snapshot=snapshot,
-                created_by=request.user,
-            )
-            version_created = True
-            version_id = version.id
-
         content = {field: seo.draft.get(field) for field in CONTENT_FIELDS}
         score = annotate_fixable(score_seo_content(product, content))
 
-        for field in CONTENT_FIELDS:
-            setattr(seo, field, content[field])
-        seo.score_overall = score["overall"]
-        seo.score_breakdown = score["breakdown"]
-        seo.seo_issues = score["issues"]  # Store SEO issues
-        seo.is_optimized = score["is_optimized"]
-        seo.draft = None
-        seo.published_at = timezone.now()
-        seo.last_published_by = request.user
-        seo.save()
+        # No score gate here on purpose — this endpoint is only reached after
+        # a human has seen the draft (via the compare view / score / issues)
+        # and explicitly chosen to publish it. The gate lives in
+        # SEOGenerateAndPublishView, which is the "skip review" path.
+        version_created, version_id = publish_content(product, seo, content, score, request.user, CONTENT_FIELDS)
 
         return Response({
             "detail": "SEO content applied.",
@@ -218,6 +250,8 @@ class SEOFixIssueView(JWTAdminMixin, APIView):
     issue against the pending draft (creating one from live content if
     none exists). Body: {"issue_id": "..."}.
     """
+
+    throttle_scope = "seo_ai_generate"
 
     def post(self, request, product_id):
         product = get_object_or_404(Product, pk=product_id)
@@ -460,15 +494,22 @@ class SEOBulkStartView(JWTAdminMixin, APIView):
     """
     POST /api/admin/seo/bulk/start
 
-    Body: {"scope": "all" | "category" | "never_generated" | "low_score", "category_id"?: number}
+    Body: {"scope": "all" | "category" | "never_generated" | "low_score",
+           "category_id"?: number, "auto_publish"?: boolean}
 
-    Queues a SEORegenerationJob per matching active product. Jobs only ever
-    write ProductSEO.draft — nothing is published automatically.
+    Queues a SEORegenerationJob per matching active product. By default jobs
+    only ever write ProductSEO.draft — nothing is published automatically.
+    If auto_publish is true, each job additionally publishes itself live
+    when (and only when) it clears the same score gate the single-product
+    "Regenerate & Publish" button enforces — see seo_publish_service.
     """
+
+    throttle_scope = "seo_ai_bulk"
 
     def post(self, request):
         scope = request.data.get("scope", "all")
         category_id = request.data.get("category_id")
+        auto_publish = bool(request.data.get("auto_publish", False))
 
         products_qs = Product.objects.filter(is_active=True)
 
@@ -493,7 +534,8 @@ class SEOBulkStartView(JWTAdminMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        result = enqueue_seo_bulk_jobs(products_qs.distinct(), requested_by=request.user)
+        result = enqueue_seo_bulk_jobs(products_qs.distinct(), requested_by=request.user, auto_publish=auto_publish)
+        result["auto_publish"] = auto_publish
         return Response(result)
 
 
@@ -512,6 +554,7 @@ class SEOBulkStatusView(JWTAdminMixin, APIView):
                     "batch_id": None, "total": 0,
                     "pending": 0, "processing": 0, "completed": 0, "failed": 0,
                     "percent_complete": 0, "is_running": False,
+                    "auto_publish": False, "published_count": 0, "held_as_draft_count": 0,
                     "started_at": None, "recent": [],
                 })
             batch_id = latest.batch_id
@@ -535,11 +578,19 @@ class SEOBulkStatusView(JWTAdminMixin, APIView):
         percent_complete = round((done / total) * 100) if total else 0
         is_running = (counts["pending"] + counts["processing"]) > 0
         started_at = jobs.order_by("created_at").values_list("created_at", flat=True).first()
+        auto_publish = jobs.filter(auto_publish=True).exists()
+        published_count = jobs.filter(published=True).count()
+        held_as_draft_count = jobs.filter(
+            status=SEORegenerationJob.Status.COMPLETED, auto_publish=True, published=False,
+        ).count()
 
         recent = list(
             jobs.select_related("product")
             .order_by("-updated_at")[:15]
-            .values("product_id", "product__name", "status", "result_score", "last_error", "completed_at")
+            .values(
+                "product_id", "product__name", "status", "result_score", "last_error", "completed_at",
+                "auto_publish", "published", "publish_block_reason",
+            )
         )
 
         return Response({
@@ -549,6 +600,9 @@ class SEOBulkStatusView(JWTAdminMixin, APIView):
             "percent_complete": percent_complete,
             "is_running": is_running,
             "started_at": started_at,
+            "auto_publish": auto_publish,
+            "published_count": published_count,
+            "held_as_draft_count": held_as_draft_count,
             "recent": recent,
         })
 

@@ -16,6 +16,9 @@ import {
 import { useToast } from "@/components/admin/Toast";
 
 const LAST_BATCH_STORAGE_KEY = "finstar_admin_seo_bulk_last_batch_id";
+// Display copy only — the real gate is enforced server-side in
+// seo_publish_service.AUTO_PUBLISH_MIN_SCORE. Keep these in sync.
+const AUTO_PUBLISH_MIN_SCORE = 80;
 
 // ── Icons ──────────────────────────────────────────────────────────────────
 const PlayIcon = () => (
@@ -89,6 +92,7 @@ export default function SeoBulkRegeneratePage() {
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [scope, setScope] = useState<SeoBulkScope>("all");
   const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [autoPublish, setAutoPublish] = useState(false);
   const [starting, setStarting] = useState(false);
   const [retrying, setRetrying] = useState(false);
 
@@ -151,13 +155,29 @@ export default function SeoBulkRegeneratePage() {
       addToast("Select a category first.", "error");
       return;
     }
+    if (autoPublish) {
+      const scopeLabel = SCOPE_OPTIONS.find((o) => o.value === scope)?.label ?? scope;
+      if (
+        !window.confirm(
+          `Regenerate AND publish "${scopeLabel}"? Each product only goes live if its new content scores ${AUTO_PUBLISH_MIN_SCORE}+/100 with no high-severity issues — anything below that is held as a draft for you to review manually instead. Current live content is backed up first and can be restored per-product from Version History.`,
+        )
+      ) {
+        return;
+      }
+    }
     setStarting(true);
     try {
       const result = await startSeoBulkRegeneration({
         scope,
         ...(scope === "category" && categoryId ? { category_id: categoryId } : {}),
+        auto_publish: autoPublish,
       });
-      addToast(`Queued ${result.queued_count} product(s) for SEO regeneration.`, "success");
+      addToast(
+        autoPublish
+          ? `Queued ${result.queued_count} product(s) for regeneration — each will publish automatically if it clears the score gate.`
+          : `Queued ${result.queued_count} product(s) for SEO regeneration.`,
+        "success",
+      );
       window.localStorage.setItem(LAST_BATCH_STORAGE_KEY, result.batch_id);
       setBatchId(result.batch_id);
       await fetchStatus(result.batch_id);
@@ -187,7 +207,10 @@ export default function SeoBulkRegeneratePage() {
       <div>
         <h2 className="text-xl font-bold text-slate-900 dark:text-white">AI SEO Optimizer — Bulk Regenerate SEO</h2>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Queue AI SEO draft generation across many products at once. Nothing is published automatically — review and apply each draft in the SEO Optimizer workspace.
+          Queue AI SEO generation across many products at once. By default nothing is published automatically —
+          review and apply each draft in the SEO Optimizer workspace. Turn on &ldquo;Publish automatically&rdquo;
+          below to also go live per-product, but only for products whose new content clears the same quality gate
+          the single-product &ldquo;Regenerate &amp; Publish&rdquo; button enforces.
         </p>
       </div>
 
@@ -233,13 +256,43 @@ export default function SeoBulkRegeneratePage() {
           </select>
         )}
 
+        <label
+          className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition ${
+            autoPublish
+              ? "border-green-400 bg-green-50 dark:bg-green-500/10"
+              : "border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20"
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={autoPublish}
+            onChange={(e) => setAutoPublish(e.target.checked)}
+            className="mt-1"
+          />
+          <div>
+            <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+              Publish automatically (skip manual review)
+            </div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              Each product goes live only if its new content scores {AUTO_PUBLISH_MIN_SCORE}+/100 with no
+              high-severity issues. Anything below that is held as a draft for you to review manually — the same
+              gate as the single-product &ldquo;Regenerate &amp; Publish&rdquo; button. Live content is backed up
+              first and can be restored per-product from Version History.
+            </div>
+          </div>
+        </label>
+
         <button
           onClick={handleStart}
           disabled={starting}
-          className="inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer ${
+            autoPublish
+              ? "bg-green-600 shadow-green-600/20 hover:bg-green-700"
+              : "bg-orange-500 shadow-orange-500/20 hover:bg-orange-600"
+          }`}
         >
           {starting ? <LoaderIcon /> : <PlayIcon />}
-          {starting ? "Starting…" : "Start Bulk Regeneration"}
+          {starting ? "Starting…" : autoPublish ? "Start Bulk Regenerate & Publish" : "Start Bulk Regeneration"}
         </button>
       </div>
 
@@ -268,6 +321,18 @@ export default function SeoBulkRegeneratePage() {
         ) : (
           <>
             <ProgressBar status={batchStatus} />
+            {batchStatus.auto_publish && (
+              <div className="flex flex-wrap gap-4 text-xs">
+                <span className="inline-flex items-center gap-1.5 text-green-600 dark:text-green-400 font-semibold">
+                  <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+                  Published live: {batchStatus.published_count}
+                </span>
+                <span className="inline-flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-semibold">
+                  <span className="inline-block h-2 w-2 rounded-full bg-amber-500" />
+                  Held as draft (needs review): {batchStatus.held_as_draft_count}
+                </span>
+              </div>
+            )}
             <div className="pt-2">
               <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">Recent activity</div>
               <div className="divide-y divide-slate-100 dark:divide-white/5">
@@ -279,6 +344,20 @@ export default function SeoBulkRegeneratePage() {
                     <div className="flex items-center gap-3 shrink-0">
                       {job.status === "completed" && job.result_score !== null && (
                         <span className="text-xs font-bold text-slate-500 dark:text-slate-400">{job.result_score}/100</span>
+                      )}
+                      {job.status === "completed" && job.auto_publish && (
+                        job.published ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-500/10 dark:text-green-400">
+                            Published
+                          </span>
+                        ) : (
+                          <span
+                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400"
+                            title={job.publish_block_reason}
+                          >
+                            Held as draft
+                          </span>
+                        )
                       )}
                       {job.status === "failed" && job.last_error && (
                         <span className="text-xs text-red-500 max-w-[220px] truncate" title={job.last_error}>{job.last_error}</span>
