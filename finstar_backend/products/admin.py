@@ -110,9 +110,9 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("name", "category", "is_active", "featured", "created_at")
+    list_display = ("name", "brand", "category", "is_active", "featured", "created_at")
     list_filter = ("category", "is_active", "featured")
-    search_fields = ("name", "description")
+    search_fields = ("name", "description", "brand")
     prepopulated_fields = {"slug": ("name",)}
     list_editable = ("is_active", "featured")
     readonly_fields = ("created_at", "updated_at")
@@ -121,7 +121,7 @@ class ProductAdmin(admin.ModelAdmin):
             "fields": ("name", "slug", "category", "is_active", "featured"),
         }),
         ("Content", {
-            "fields": ("short_description", "description", "image_url", "specs"),
+            "fields": ("short_description", "description", "brand", "image_url", "specs"),
         }),
         ("Timestamps", {
             "fields": ("created_at", "updated_at"),
@@ -296,9 +296,9 @@ class SEOVersionAdmin(admin.ModelAdmin):
 class SEORegenerationJobAdmin(admin.ModelAdmin):
     list_display = [
         "id", "product", "batch_id", "status",
-        "attempts", "result_score", "requested_by", "created_at",
+        "attempts", "result_score", "auto_publish", "published", "requested_by", "created_at",
     ]
-    list_filter = ["status"]
+    list_filter = ["status", "auto_publish", "published"]
     search_fields = ["product__name", "batch_id", "last_error"]
     readonly_fields = [f.name for f in SEORegenerationJob._meta.fields if f.name != "id"]
     ordering = ["-created_at"]

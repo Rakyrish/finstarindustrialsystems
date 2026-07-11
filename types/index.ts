@@ -32,6 +32,10 @@ export interface ProductSeoContent {
   imageTitle: string;
   imageCaption: string;
   imageDescription: string;
+  canonicalUrl: string;
+  focusKeyword: string;
+  secondaryKeywords: string[];
+  longTailKeywords: string[];
 }
 
 export interface Product {
@@ -40,6 +44,7 @@ export interface Product {
   slug: string;
   description: string;
   shortDescription: string;
+  brand: string;
   category: ProductCategory;
   imageUrl: string;
   imageUrls: string[];

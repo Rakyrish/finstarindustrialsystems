@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
@@ -66,6 +66,25 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#ea580c",
+};
+
+// Site-wide aggregate rating for LocalBusinessJsonLd — same /api/reviews route
+// the homepage's visible ReviewsSection uses, ISR-cached 24h server-side.
+async function getAggregateRating(): Promise<{ ratingValue: number; reviewCount: number } | undefined> {
+  try {
+    const res = await fetch(`${SITE_URL}/api/reviews`, { next: { revalidate: 86400 } });
+    if (!res.ok) throw new Error("Reviews fetch failed");
+    const data: { overallRating: number; totalRatings: number } = await res.json();
+    return data.totalRatings > 0 ? { ratingValue: data.overallRating, reviewCount: data.totalRatings } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -74,6 +93,7 @@ export default async function RootLayout({
   // Fetch products for global search — gracefully handle API unavailability
   const products = await fetchAllProducts().catch(() => []);
   const imageProtectionSettings = await getPublicImageProtectionSettings().catch(() => null);
+  const aggregateRating = await getAggregateRating();
 
   return (
     <html lang="en-KE" className={inter.variable} suppressHydrationWarning data-scroll-behavior="smooth">
@@ -91,7 +111,7 @@ export default async function RootLayout({
           <ImageProtectionProvider settings={imageProtectionSettings}>
             <SeoGraphJsonLd>
               <OrganizationJsonLd />
-              <LocalBusinessJsonLd />
+              <LocalBusinessJsonLd aggregateRating={aggregateRating} />
               <WebsiteJsonLd />
               <SpeakableWebsiteJsonLd />
               <BusinessFactsJsonLd />

@@ -17,6 +17,15 @@ export const BUSINESS_COORDINATES = {
   longitude: 36.8390376,
 };
 
+// Single source of truth for the business's Google Maps/Business Profile
+// listing — was previously duplicated verbatim across JsonLd.tsx, Footer.tsx,
+// app/page.tsx, and app/contact/page.tsx.
+export const GOOGLE_MAPS_URL =
+  "https://www.google.com/maps/place/Finstar+Industrial+Systems+Ltd/@-1.3050988,36.8390376,837m/data=!3m2!1e3!4b1!4m6!3m5!1s0x182f11c670b98d43:0x6f348874e48071b5!8m2!3d-1.3050988!4d36.8390376!16s%2Fg%2F11x8c2x1hk";
+export const GOOGLE_MAPS_DIRECTIONS_URL = `${GOOGLE_MAPS_URL}?entry=ttu&g_ep=EgoyMDI2MDQyNy4wIKXMDSoASAFQAw%3D%3D`;
+export const GOOGLE_MAPS_EMBED_URL =
+  "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3988.8565!2d36.8390376!3d-1.3050988!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x182f11c670b98d43%3A0x6f348874e48071b5!2sFinstar%20Industrial%20Systems%20Ltd!5e0!3m2!1sen!2ske!4v1680000000000!5m2!1sen!2ske";
+
 export const SERVICE_AREAS = [
   "Nairobi",
   "Kenya",
@@ -67,6 +76,12 @@ interface BuildPageMetadataOptions {
   image?: string;
   type?: "website" | "article";
   noIndex?: boolean;
+  /**
+   * Editorial override for the canonical URL (e.g. a near-duplicate product
+   * that should point at another page) — only affects alternates.canonical,
+   * never Open Graph/Twitter, which must still describe the real page.
+   */
+  canonicalOverride?: string;
 }
 
 interface CategorySeoContent {
@@ -336,18 +351,20 @@ export function buildPageMetadata({
   image,
   type = "website",
   noIndex = false,
+  canonicalOverride,
 }: BuildPageMetadataOptions): Metadata {
+  const canonicalPath = canonicalOverride || path;
   return {
     title,
     description,
     keywords: uniqueKeywords(keywords),
     category: "industrial engineering",
     alternates: {
-      canonical: path,
+      canonical: canonicalPath,
       languages: {
-        "en-KE": path,
-        en: path,
-        "x-default": path,
+        "en-KE": canonicalPath,
+        en: canonicalPath,
+        "x-default": canonicalPath,
       },
     },
     openGraph: {
@@ -397,12 +414,16 @@ export function buildProductMetadata(product: Product): Metadata {
     title: seo?.seoTitle || `${product.name} | ${product.category.name} Supplier in Kenya`,
     description: seo?.metaDescription || fallbackDescription,
     path: `/products/${product.slug}`,
+    canonicalOverride: seo?.canonicalUrl || undefined,
     keywords: [
       product.name,
       product.category.name,
       `${product.category.name} Kenya`,
       "industrial equipment Kenya",
       "Nairobi industrial supplier",
+      ...(seo?.focusKeyword ? [seo.focusKeyword] : []),
+      ...(seo?.secondaryKeywords ?? []),
+      ...(seo?.longTailKeywords ?? []),
     ],
     image: product.imageUrl || product.imageUrls[0],
     type: "article",

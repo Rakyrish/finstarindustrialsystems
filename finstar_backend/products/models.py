@@ -73,6 +73,13 @@ class Product(models.Model):
     slug = models.SlugField(max_length=300, unique=True, db_index=True)
     description = models.TextField()
     short_description = models.CharField(max_length=1000, blank=True, default="")
+    brand = models.CharField(
+        max_length=150,
+        blank=True,
+        default="",
+        db_index=True,
+        help_text="Manufacturer/OEM brand (e.g. Danfoss, Riello) — NOT Finstar, the reseller.",
+    )
     category = models.ForeignKey(
         Category,
         on_delete=models.CASCADE,
@@ -649,8 +656,14 @@ class SEORegenerationJob(models.Model):
     Durable background job queue for bulk AI SEO draft generation.
 
     Mirrors InventorySyncJob's "no Celery/Redis" polling-worker pattern.
-    Only ever writes ProductSEO.draft — never touches live SEO content or
-    any Product field, so a bulk run can never publish unreviewed content.
+    By default (auto_publish=False) a job only ever writes ProductSEO.draft
+    — never live content — so a bulk run can never publish unreviewed
+    content by accident. When auto_publish=True, a completed job additionally
+    goes live IF AND ONLY IF the generated content clears
+    seo_publish_service.blocks_auto_publish() (score + no HIGH-severity
+    issues) — the exact same gate the single-product "Regenerate & Publish"
+    button enforces, so a low-quality generation is always held as a draft
+    for human review regardless of which path produced it.
     """
 
     class Status(models.TextChoices):
@@ -673,6 +686,18 @@ class SEORegenerationJob(models.Model):
     next_attempt_at = models.DateTimeField(default=timezone.now, db_index=True)
     last_error = models.TextField(blank=True, default="")
     result_score = models.PositiveSmallIntegerField(null=True, blank=True)
+    auto_publish = models.BooleanField(
+        default=False,
+        help_text="If true, a completed job publishes live automatically when it clears the score gate.",
+    )
+    published = models.BooleanField(
+        default=False,
+        help_text="Whether this job's generated content actually went live (only possible when auto_publish=True).",
+    )
+    publish_block_reason = models.TextField(
+        blank=True, default="",
+        help_text="Why an auto_publish job's content was held as a draft instead of published, if it was.",
+    )
     requested_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="seo_bulk_jobs",

@@ -10,6 +10,7 @@ import {
   DEFAULT_EMAIL,
   DEFAULT_PHONE,
   DEFAULT_PHONE_MACHINE,
+  GOOGLE_MAPS_URL,
   SERVICE_AREAS,
   SITE_NAME,
   SITE_SHORT_NAME,
@@ -22,12 +23,14 @@ import {
 type JsonLdValue = Record<string, unknown> | Array<Record<string, unknown>>;
 
 function JsonLd({ value }: { value: JsonLdValue }) {
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(value) }}
-    />
-  );
+  // JSON.stringify does NOT escape "<", so any string field containing a
+  // literal "</script>" (an AI-generated FAQ answer, a product name, etc.)
+  // would prematurely close this tag and let the browser parse whatever
+  // follows as real HTML/script — a confirmed, exploitable stored-XSS vector.
+  // Escaping every "<" to its unicode escape neutralizes the breakout while
+  // keeping the payload valid, parseable JSON.
+  const json = JSON.stringify(value).replace(/</g, "\\u003c");
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: json }} />;
 }
 
 export function SeoGraphJsonLd({ children }: { children: ReactNode }) {
@@ -52,6 +55,7 @@ export function OrganizationJsonLd() {
         sameAs: [
           "https://www.linkedin.com/company/finstar-industrial",
           "https://www.facebook.com/finstarindustrial",
+          GOOGLE_MAPS_URL,
         ],
         areaServed: SERVICE_AREAS.map((area) => ({ "@type": "Place", name: area })),
         contactPoint: [
@@ -69,7 +73,11 @@ export function OrganizationJsonLd() {
   );
 }
 
-export function LocalBusinessJsonLd() {
+export function LocalBusinessJsonLd({
+  aggregateRating,
+}: {
+  aggregateRating?: { ratingValue: number; reviewCount: number };
+} = {}) {
   return (
     <JsonLd
       value={{
@@ -82,7 +90,17 @@ export function LocalBusinessJsonLd() {
         logo: absoluteUrl("/logo.png"),
         telephone: DEFAULT_PHONE,
         email: DEFAULT_EMAIL,
-        priceRange: "$$",
+        ...(aggregateRating
+          ? {
+              aggregateRating: {
+                "@type": "AggregateRating",
+                ratingValue: aggregateRating.ratingValue,
+                reviewCount: aggregateRating.reviewCount,
+                bestRating: 5,
+                worstRating: 1,
+              },
+            }
+          : {}),
         address: {
           "@type": "PostalAddress",
           streetAddress: "Industrial Area, Enterprise Road",
@@ -111,8 +129,7 @@ export function LocalBusinessJsonLd() {
           },
         ],
         areaServed: SERVICE_AREAS.map((area) => ({ "@type": "Place", name: area })),
-        hasMap:
-          "https://www.google.com/maps/place/Finstar+Industrial+Systems+Ltd/@-1.3050988,36.8390376,837m/data=!3m2!1e3!4b1!4m6!3m5!1s0x182f11c670b98d43:0x6f348874e48071b5!8m2!3d-1.3050988!4d36.8390376!16s%2Fg%2F11x8c2x1hk",
+        hasMap: GOOGLE_MAPS_URL,
       }}
     />
   );
@@ -222,32 +239,6 @@ export function ContactPageJsonLd() {
   );
 }
 
-export function ReviewAggregateJsonLd({
-  ratingValue,
-  reviewCount,
-}: {
-  ratingValue: number;
-  reviewCount: number;
-}) {
-  return (
-    <JsonLd
-      value={{
-        "@context": "https://schema.org",
-        "@type": "LocalBusiness",
-        "@id": `${SITE_URL}/#localbusiness`,
-        name: SITE_NAME,
-        aggregateRating: {
-          "@type": "AggregateRating",
-          ratingValue,
-          reviewCount,
-          bestRating: 5,
-          worstRating: 1,
-        },
-      }}
-    />
-  );
-}
-
 export function ProductJsonLd({ product }: { product: Product }) {
   const description = stripHtml(product.seo?.introduction || product.description || product.shortDescription);
   const faqs = buildProductFaqs(product);
@@ -267,10 +258,17 @@ export function ProductJsonLd({ product }: { product: Product }) {
           category: product.category.name,
           url: absoluteUrl(`/products/${product.slug}`),
           image: product.imageUrls.length > 0 ? product.imageUrls : product.imageUrl ? [product.imageUrl] : undefined,
-          brand: {
-            "@type": "Brand",
-            name: SITE_SHORT_NAME,
-          },
+          // Real manufacturer brand only — never fall back to Finstar, the
+          // reseller, which was the original bug here. Omit the field
+          // entirely until a product has a confirmed brand.
+          ...(product.brand
+            ? {
+                brand: {
+                  "@type": "Brand",
+                  name: product.brand,
+                },
+              }
+            : {}),
           manufacturer: {
             "@type": "Organization",
             "@id": `${SITE_URL}/#organization`,
@@ -283,18 +281,11 @@ export function ProductJsonLd({ product }: { product: Product }) {
                 value,
               }))
             : undefined,
-          offers: {
-            "@type": "Offer",
-            url: absoluteUrl(`/products/${product.slug}`),
-            availability: "https://schema.org/InStock",
-            priceCurrency: "KES",
-            seller: { "@id": `${SITE_URL}/#organization` },
-            priceSpecification: {
-              "@type": "PriceSpecification",
-              priceCurrency: "KES",
-              price: "0",
-            },
-          },
+          // No `offers` block: this is a quote-only distributor with no real
+          // listed price, and schema.org/Google require Offer to carry a
+          // price or priceSpecification to be valid — asserting availability
+          // without one is itself invalid structured data, so Product stands
+          // on its own instead.
           areaServed: SERVICE_AREAS,
         }}
       />

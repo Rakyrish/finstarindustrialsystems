@@ -3,10 +3,12 @@
 import { Suspense, useEffect, useMemo, useState, useCallback } from "react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
+import { sanitizeProductHtml } from "@/lib/sanitizeHtml";
 import {
   getAdminProducts,
   getProductSeo,
   generateProductSeoDraft,
+  generateAndPublishProductSeo,
   applyProductSeoDraft,
   saveProductSeoDraft,
   applySeoIssueFix,
@@ -195,7 +197,10 @@ function renderFieldValue(value: unknown, kind: string) {
   }
 
   if (kind === "html") {
-    return <div dangerouslySetInnerHTML={{ __html: String(value) }} />;
+    // This preview renders raw AI-generated / admin-typed HTML (see the
+    // "Edit Draft" HTML textarea below) — never render it unsanitized, on
+    // this authenticated admin page or anywhere else.
+    return <div dangerouslySetInnerHTML={{ __html: sanitizeProductHtml(String(value)) }} />;
   }
 
   return <span>{String(value)}</span>;
@@ -323,18 +328,21 @@ function SeoOptimizerWorkspace() {
 
   const handleGenerateAndPublish = async () => {
     if (!selectedProductId) return;
-    if (!window.confirm("Regenerate this product's SEO content with AI and publish it live immediately? The current live content will be backed up first, and you can restore it from Version History. The product's slug and URL are never changed.")) return;
+    if (!window.confirm("Regenerate this product's SEO content with AI and publish it live immediately? The current live content will be backed up first, and you can restore it from Version History. The product's slug and URL are never changed. If the new content scores too low or has a high-severity issue, it will be held as a draft for you to review instead of publishing automatically.")) return;
     setGeneratingAndApplying(true);
     try {
-      await generateProductSeoDraft(selectedProductId);
-      await applyProductSeoDraft(selectedProductId);
-      addToast("SEO content regenerated and published live.", "success");
+      const result = await generateAndPublishProductSeo(selectedProductId);
+      if (result.published) {
+        addToast("SEO content regenerated and published live.", "success");
+      } else {
+        addToast(result.detail, "info");
+      }
       await loadDetail(selectedProductId);
       if (typeof router.refresh === "function") {
         router.refresh();
       }
     } catch {
-      addToast("Failed to regenerate and publish SEO content.", "error");
+      addToast("Failed to regenerate SEO content.", "error");
     } finally {
       setGeneratingAndApplying(false);
     }

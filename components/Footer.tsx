@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { navigationCategories } from "@/lib/data";
-import { buildCategoryPath } from "@/lib/seo";
+import { BUSINESS_ADDRESS, buildCategoryPath, GOOGLE_MAPS_DIRECTIONS_URL } from "@/lib/seo";
 import ContactButtons from "./ContactButtons";
 
 export default function Footer() {
@@ -110,7 +110,7 @@ export default function Footer() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                Industrial Area, Nairobi, Kenya
+                {BUSINESS_ADDRESS}
               </li>
               <li className="flex items-center gap-2.5 text-sm text-slate-400">
                 <svg className="w-4 h-4 text-orange-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -132,7 +132,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href="https://www.google.com/maps/place/Finstar+Industrial+Systems+Ltd/@-1.3050988,36.8390376,837m/data=!3m2!1e3!4b1!4m6!3m5!1s0x182f11c670b98d43:0x6f348874e48071b5!8m2!3d-1.3050988!4d36.8390376!16s%2Fg%2F11x8c2x1hk?entry=ttu&g_ep=EgoyMDI2MDQyNy4wIKXMDSoASAFQAw%3D%3D"
+                  href={GOOGLE_MAPS_DIRECTIONS_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center justify-center gap-2 rounded-xl border-2 border-white/30 bg-white/10 px-2 py-2 text-base font-bold text-white backdrop-blur-sm transition-all duration-200 hover:bg-white/20"

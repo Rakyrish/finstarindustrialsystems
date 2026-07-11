@@ -41,6 +41,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       fetchAllProducts(),
     ]);
 
+    // A "successful" fetch that returns nothing is just as dangerous as a
+    // thrown error here — either way the sitemap would silently collapse to
+    // 4 static URLs and drop the entire catalogue from Google's index.
+    if (products.length === 0) {
+      throw new Error(
+        `Sitemap build got 0 products from the API — refusing to publish a sitemap that drops the entire catalogue.`,
+      );
+    }
+
     const categoryRoutes: MetadataRoute.Sitemap = categories.map((category) => ({
       url: `${SITE_URL}${buildCategoryPath(category.slug)}`,
       lastModified: now,
@@ -56,7 +65,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }));
 
     return [...staticRoutes, ...categoryRoutes, ...productRoutes];
-  } catch {
+  } catch (error) {
+    // Loud on purpose: this fallback silently drops every product/category
+    // URL from the sitemap, which is a de-indexing risk if it goes
+    // unnoticed. Surface it in build/deploy logs every time it fires.
+    console.error(
+      "[sitemap] Falling back to static routes only — product/category URLs are NOT in this sitemap build. " +
+        "Investigate the backend API before this deploy ships.",
+      error,
+    );
     return staticRoutes;
   }
 }

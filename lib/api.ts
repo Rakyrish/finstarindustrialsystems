@@ -56,6 +56,10 @@ export interface ApiProductSeoPublic {
   image_title: string;
   image_caption: string;
   image_description: string;
+  canonical_url: string;
+  focus_keyword: string;
+  secondary_keywords: string[];
+  long_tail_keywords: string[];
 }
 
 export interface ApiProduct {
@@ -64,6 +68,7 @@ export interface ApiProduct {
   slug: string;
   description: string;
   short_description: string;
+  brand: string;
   category: ApiCategory;
   image_url: string;
   image_urls?: string[];
@@ -318,6 +323,10 @@ function mapProductSeo(seo: ApiProductSeoPublic | null | undefined): ProductSeoC
     imageTitle: seo.image_title,
     imageCaption: seo.image_caption,
     imageDescription: seo.image_description,
+    canonicalUrl: seo.canonical_url,
+    focusKeyword: seo.focus_keyword,
+    secondaryKeywords: seo.secondary_keywords,
+    longTailKeywords: seo.long_tail_keywords,
   };
 }
 
@@ -334,6 +343,7 @@ function mapProduct(product: ApiProduct): Product {
     slug: product.slug,
     description: product.description ?? "",
     shortDescription: product.short_description,
+    brand: product.brand ?? "",
     category: mapProductCategory(product.category),
     imageUrl: product.image_url,
     imageUrls,
@@ -1130,6 +1140,26 @@ export async function applyProductSeoDraft(productId: number) {
   }>(`/admin/seo/products/${productId}/apply`, { method: "POST" });
 }
 
+/**
+ * The "Regenerate & Publish" one-click flow. Unlike generate + apply called
+ * separately, this is gated server-side: if the freshly generated draft
+ * scores below the auto-publish threshold or has a HIGH-severity issue, the
+ * backend saves the draft but does NOT publish it — `published` comes back
+ * false and `live`/`live_score`/`version_id` are omitted.
+ */
+export async function generateAndPublishProductSeo(productId: number) {
+  return authFetchAPI<{
+    detail: string;
+    draft: ApiSeoContent;
+    score: ApiSeoScore;
+    published: boolean;
+    live?: ApiSeoContent;
+    live_score?: ApiSeoScore;
+    version_created?: boolean;
+    version_id?: number | null;
+  }>(`/admin/seo/products/${productId}/generate-and-publish`, { method: "POST" });
+}
+
 export async function saveProductSeoDraft(productId: number, updates: Partial<ApiSeoContent>) {
   return authFetchAPI<{ draft: ApiSeoContent; score: ApiSeoScore }>(
     `/admin/seo/products/${productId}/draft`,
@@ -1178,6 +1208,7 @@ export interface ApiSeoBulkStartResponse {
   queued_count: number;
   skipped_count: number;
   total_matched: number;
+  auto_publish: boolean;
 }
 
 export interface ApiSeoBulkJobSummary {
@@ -1187,6 +1218,9 @@ export interface ApiSeoBulkJobSummary {
   result_score: number | null;
   last_error: string;
   completed_at: string | null;
+  auto_publish: boolean;
+  published: boolean;
+  publish_block_reason: string;
 }
 
 export interface ApiSeoBulkStatus {
@@ -1199,6 +1233,9 @@ export interface ApiSeoBulkStatus {
   percent_complete: number;
   is_running: boolean;
   started_at: string | null;
+  auto_publish: boolean;
+  published_count: number;
+  held_as_draft_count: number;
   recent: ApiSeoBulkJobSummary[];
 }
 
@@ -1213,7 +1250,7 @@ export interface ApiSeoBulkBatch {
   last_activity_at: string;
 }
 
-export async function startSeoBulkRegeneration(payload: { scope: SeoBulkScope; category_id?: number }) {
+export async function startSeoBulkRegeneration(payload: { scope: SeoBulkScope; category_id?: number; auto_publish?: boolean }) {
   return authFetchAPI<ApiSeoBulkStartResponse>("/admin/seo/bulk/start", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

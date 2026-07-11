@@ -12,10 +12,11 @@ from __future__ import annotations
 
 import logging
 import uuid
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import timedelta
 
 import cloudinary.uploader
-from django.db import connection, transaction
+from django.db import close_old_connections, connection, transaction
 from django.db.models import Count, Max, Min, Q
 from django.utils import timezone
 
@@ -87,16 +88,52 @@ def enqueue_watermark_jobs(scope: str, *, category_id=None, requested_by=None) -
     }
 
 
-def process_pending_watermark_jobs(batch_size: int = 50) -> dict:
+def process_pending_watermark_jobs(batch_size: int = 50, *, max_workers: int = 8) -> dict:
     claimed_jobs = _claim_watermark_jobs(batch_size=batch_size)
     summary = {"processed": 0, "completed": 0, "failed": 0, "retried": 0}
 
-    for job in claimed_jobs:
-        summary["processed"] += 1
-        result = _process_watermark_job(job)
-        summary[result] += 1
+    if not claimed_jobs:
+        return summary
+
+    # Work is Cloudinary-network-bound, not CPU-bound, so a thread pool fans the
+    # per-image eager() calls out concurrently. Claim already happens under
+    # select_for_update(skip_locked=True) on the main thread, so each claimed
+    # job is exclusively owned by this worker — no double-processing.
+    worker_count = max(1, min(max_workers, len(claimed_jobs)))
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        futures = [executor.submit(_process_job_threadsafe, job) for job in claimed_jobs]
+        for future in as_completed(futures):
+            summary["processed"] += 1
+            summary[future.result()] += 1
 
     return summary
+
+
+def _process_job_threadsafe(job: WatermarkJob) -> str:
+    """
+    Per-thread wrapper so one job's failure can never abort the batch.
+
+    Django DB connections are thread-local, so each worker uses its own
+    connection. close_old_connections() resets it at entry and exit so a
+    transient DB error in one iteration can't poison the next batch's conn.
+    _process_watermark_job already narrows Cloudinary errors to retry/fail,
+    so this catches the remaining DB/audit-log failure modes.
+    """
+    close_old_connections()
+    try:
+        return _process_watermark_job(job)
+    except Exception as exc:
+        logger.exception("[Watermark bulk] Uncaught error processing job %s", job.id)
+        try:
+            job.status = WatermarkJob.Status.FAILED
+            job.last_error = str(exc)[:1000]
+            job.completed_at = timezone.now()
+            job.save(update_fields=["status", "last_error", "completed_at", "updated_at"])
+        except Exception:
+            logger.exception("[Watermark bulk] Failed to mark job %s as FAILED", job.id)
+        return "failed"
+    finally:
+        close_old_connections()
 
 
 def _claim_watermark_jobs(batch_size: int) -> list[WatermarkJob]:

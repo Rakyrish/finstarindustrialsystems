@@ -11,15 +11,22 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument("--once", action="store_true", help="Process available jobs once and exit.")
         parser.add_argument("--batch-size", type=int, default=50, help="Maximum jobs to process per iteration.")
+        parser.add_argument(
+            "--max-workers",
+            type=int,
+            default=8,
+            help="Max parallel Cloudinary calls per iteration (network-bound work).",
+        )
         parser.add_argument("--sleep-seconds", type=float, default=10.0, help="Idle polling interval.")
 
     def handle(self, *args, **options):
         once = options["once"]
         batch_size = max(1, options["batch_size"])
+        max_workers = max(1, options["max_workers"])
         sleep_seconds = max(0.5, options["sleep_seconds"])
 
         while True:
-            summary = process_pending_watermark_jobs(batch_size=batch_size)
+            summary = process_pending_watermark_jobs(batch_size=batch_size, max_workers=max_workers)
             processed = summary["processed"]
 
             if processed:

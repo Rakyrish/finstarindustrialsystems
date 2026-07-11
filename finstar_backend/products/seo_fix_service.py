@@ -80,8 +80,8 @@ FIXABLE_ISSUE_IDS = set(AI_FIELD_FOR_ISSUE) | set(DETERMINISTIC_FIELD_FOR_ISSUE)
 
 FIELD_SPEC = {
     "seo_title": "a single-line SEO title, 50-60 characters",
-    "meta_description": "a single-line meta description, 140-160 characters, ending with a clear call to action",
-    "introduction": "an HTML string using only <p> tags, 150-250 words",
+    "meta_description": "a single-line meta description, 140-160 characters, containing the exact focus keyword verbatim, ending with a clear call to action",
+    "introduction": "an HTML string using only <p> tags, 350-450 words (2-3 paragraphs) — this is the main lever for the site's 600+ combined-word content-depth target, so be substantive, not padded",
     "image_seo_filename": "an SEO-friendly kebab-case filename without a file extension",
     "image_alt_text": "descriptive alt text under 125 characters, including the product name",
     "image_title": "a short image title attribute",
