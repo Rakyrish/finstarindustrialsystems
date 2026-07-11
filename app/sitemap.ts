@@ -2,6 +2,8 @@ import { MetadataRoute } from "next";
 import { fetchAllProducts, getCategories } from "@/lib/api";
 import { buildCategoryPath, SITE_URL } from "@/lib/seo";
 
+export const revalidate = 3600
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
