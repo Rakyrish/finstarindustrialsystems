@@ -328,7 +328,6 @@ function SeoOptimizerWorkspace() {
 
   const handleGenerateAndPublish = async () => {
     if (!selectedProductId) return;
-    if (!window.confirm("Regenerate this product's SEO content with AI and publish it live immediately? The current live content will be backed up first, and you can restore it from Version History. The product's slug and URL are never changed. If the new content scores too low or has a high-severity issue, it will be held as a draft for you to review instead of publishing automatically.")) return;
     setGeneratingAndApplying(true);
     try {
       const result = await generateAndPublishProductSeo(selectedProductId);
@@ -350,7 +349,6 @@ function SeoOptimizerWorkspace() {
 
   const handleApply = async () => {
     if (!selectedProductId) return;
-    if (!window.confirm("Publish this draft as the live SEO content for this product? The current live content will be backed up.")) return;
     setApplying(true);
     try {
       await applyProductSeoDraft(selectedProductId);
@@ -369,7 +367,6 @@ function SeoOptimizerWorkspace() {
 
   const handleRestore = async (versionId: number, versionNumber: number) => {
     if (!selectedProductId) return;
-    if (!window.confirm(`Restore version ${versionNumber}? The current live content will be backed up first.`)) return;
     setRestoringId(versionId);
     try {
       await restoreProductSeoVersion(selectedProductId, versionId);
