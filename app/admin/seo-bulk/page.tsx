@@ -8,6 +8,7 @@ import {
   getSeoBulkStatus,
   getSeoBulkBatches,
   retrySeoBulkFailed,
+  isAPIError,
   type ApiCategory,
   type ApiSeoBulkStatus,
   type ApiSeoBulkBatch,
@@ -111,12 +112,20 @@ export default function SeoBulkRegeneratePage() {
         setBatchId(data.batch_id);
         window.localStorage.setItem(LAST_BATCH_STORAGE_KEY, data.batch_id);
       }
-    } catch {
-      // No batches yet, or transient error — leave existing state as-is.
+    } catch (err) {
+      if (id && isAPIError(err) && err.status === 404) {
+        // The batch we were polling no longer resolves to any jobs — stop
+        // polling it instead of retrying a 404 forever.
+        setBatchStatus(null);
+        setBatchId(null);
+        window.localStorage.removeItem(LAST_BATCH_STORAGE_KEY);
+        addToast("That SEO batch could not be found — it may have queued 0 products.", "error");
+      }
+      // No batches yet (no id passed), or a transient error — leave state as-is.
     } finally {
       setStatusLoading(false);
     }
-  }, []);
+  }, [addToast]);
 
   const fetchBatches = useCallback(async () => {
     try {
@@ -172,6 +181,14 @@ export default function SeoBulkRegeneratePage() {
         ...(scope === "category" && categoryId ? { category_id: categoryId } : {}),
         auto_publish: autoPublish,
       });
+      if (result.queued_count === 0) {
+        addToast(
+          `No products queued — ${result.total_matched} matched this scope, but all were skipped (already up to date, or already in progress).`,
+          "error",
+        );
+        await fetchBatches();
+        return;
+      }
       addToast(
         autoPublish
           ? `Queued ${result.queued_count} product(s) for regeneration — each will publish automatically if it clears the score gate.`

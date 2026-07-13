@@ -44,6 +44,19 @@ const nextConfig: NextConfig = {
   // ── Compression ───────────────────────────────────────────────────────────
   compress: true,
 
+  // ── Legacy category slug redirects ────────────────────────────────────────
+  async redirects() {
+    return [
+      {
+        // "boilers" was the category's original slug; renamed to
+        // "boilers-steam-systems" to match the site nav/footer link.
+        source: "/products/category/boilers",
+        destination: "/products/category/boilers-steam-systems",
+        permanent: true,
+      },
+    ];
+  },
+
   // ── Power-user: strict mode keeps React honest ────────────────────────────
   reactStrictMode: true,
 

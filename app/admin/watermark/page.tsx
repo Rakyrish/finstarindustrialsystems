@@ -16,6 +16,7 @@ import {
   cancelWatermarkBulk,
   restoreProductWatermark,
   restoreAllWatermarks,
+  isAPIError,
   type ApiCategory,
   type ApiProduct,
   type ApiImageProtectionSettings,
@@ -115,6 +116,11 @@ export default function WatermarkManagementPage() {
   // Design form state
   const [settings, setSettings] = useState<ApiImageProtectionSettings | null>(null);
   const [form, setForm] = useState({
+    watermark_enabled: false,
+    right_click_protection_enabled: false,
+    drag_protection_enabled: false,
+    long_press_protection_enabled: false,
+    seo_metadata_protection_enabled: false,
     watermark_text: "",
     watermark_secondary_text: "",
     watermark_opacity: 20,
@@ -151,6 +157,11 @@ export default function WatermarkManagementPage() {
       .then((s) => {
         setSettings(s);
         setForm({
+          watermark_enabled: s.watermark_enabled,
+          right_click_protection_enabled: s.right_click_protection_enabled,
+          drag_protection_enabled: s.drag_protection_enabled,
+          long_press_protection_enabled: s.long_press_protection_enabled,
+          seo_metadata_protection_enabled: s.seo_metadata_protection_enabled,
           watermark_text: s.watermark_text,
           watermark_secondary_text: s.watermark_secondary_text,
           watermark_opacity: s.watermark_opacity,
@@ -161,8 +172,8 @@ export default function WatermarkManagementPage() {
         });
       })
       .catch(() => addToast("Failed to load watermark settings.", "error"));
-    getAdminCategories().then(setCategories).catch(() => {});
-    getAdminProducts().then((r) => setProducts(r.results)).catch(() => {});
+    getAdminCategories().then(setCategories).catch(() => { });
+    getAdminProducts().then((r) => setProducts(r.results)).catch(() => { });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -174,12 +185,20 @@ export default function WatermarkManagementPage() {
         setBatchId(data.batch_id);
         window.localStorage.setItem(LAST_BATCH_STORAGE_KEY, data.batch_id);
       }
-    } catch {
-      // No batches yet, or transient error — leave existing state as-is.
+    } catch (err) {
+      if (id && isAPIError(err) && err.status === 404) {
+        // The batch we were polling no longer resolves to any jobs — stop
+        // polling it instead of retrying a 404 forever.
+        setBatchStatus(null);
+        setBatchId(null);
+        window.localStorage.removeItem(LAST_BATCH_STORAGE_KEY);
+        addToast("That watermark batch could not be found — it may have queued 0 products.", "error");
+      }
+      // No batches yet (no id passed), or a transient error — leave state as-is.
     } finally {
       setStatusLoading(false);
     }
-  }, []);
+  }, [addToast]);
 
   const fetchBatches = useCallback(async () => {
     try {
@@ -230,7 +249,7 @@ export default function WatermarkManagementPage() {
       const result = await generateWatermarkPreview(form);
       setPreviewUrl(result.preview_url);
     } catch {
-      addToast("Failed to generate preview. Make sure at least one product has a Cloudinary image.", "error");
+      addToast("Failed to generate preview. Make sure at least one product is saved with an image.", "error");
     } finally {
       setPreviewing(false);
     }
@@ -247,6 +266,14 @@ export default function WatermarkManagementPage() {
         scope,
         ...(scope === "category" && categoryId ? { category_id: categoryId } : {}),
       });
+      if (result.queued_count === 0) {
+        addToast(
+          `No products queued — ${result.total_matched} matched this scope, but all were skipped (missing image, or already in progress).`,
+          "error",
+        );
+        await fetchBatches();
+        return;
+      }
       addToast(`Queued ${result.queued_count} product(s) for watermarking.`, "success");
       window.localStorage.setItem(LAST_BATCH_STORAGE_KEY, result.batch_id);
       setBatchId(result.batch_id);
@@ -314,6 +341,39 @@ export default function WatermarkManagementPage() {
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Design the brand watermark, apply it across the existing catalog in the background, and restore originals at any time.
         </p>
+      </div>
+
+      {/* Protection toggles */}
+      <div className="bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl p-5 shadow-sm space-y-4">
+        <div>
+          <h3 className="font-bold text-sm text-slate-900 dark:text-white">Site-wide Protection</h3>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            These master switches control whether protection actually shows on the live site. Applying a watermark to a
+            product only marks it as protected — nothing appears to visitors until &quot;Enable watermarking&quot; below is on.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {([
+            ["watermark_enabled", "Enable watermarking", "Serve the watermarked image instead of the original wherever it's been applied."],
+            ["right_click_protection_enabled", "Block right-click save", "Disable right-click/context menu on product images."],
+            ["drag_protection_enabled", "Block image drag", "Prevent dragging product images out of the page."],
+            ["long_press_protection_enabled", "Block long-press save (mobile)", "Prevent the mobile \"save image\" long-press menu."],
+            ["seo_metadata_protection_enabled", "Strip image SEO metadata", "Omit descriptive alt/title metadata that could aid image scraping."],
+          ] as const).map(([key, label, description]) => (
+            <label key={key} className="flex items-start gap-3 rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-slate-900 px-3 py-2.5 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form[key]}
+                onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.checked }))}
+                className="mt-0.5 h-4 w-4 accent-orange-500 cursor-pointer"
+              />
+              <div>
+                <div className="font-medium text-slate-800 dark:text-slate-200">{label}</div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">{description}</div>
+              </div>
+            </label>
+          ))}
+        </div>
       </div>
 
       {/* Design */}
@@ -429,11 +489,10 @@ export default function WatermarkManagementPage() {
           {SCOPE_OPTIONS.map((option) => (
             <label
               key={option.value}
-              className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition ${
-                scope === option.value
+              className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition ${scope === option.value
                   ? "border-orange-400 bg-orange-50 dark:bg-orange-500/10"
                   : "border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20"
-              }`}
+                }`}
             >
               <input
                 type="radio"
@@ -550,9 +609,8 @@ export default function WatermarkManagementPage() {
               <button
                 key={batch.batch_id}
                 onClick={() => fetchStatus(batch.batch_id)}
-                className={`w-full flex items-center justify-between px-5 py-3 text-sm text-left transition cursor-pointer ${
-                  batch.batch_id === batchId ? "bg-orange-50 dark:bg-orange-500/10" : "hover:bg-slate-50 dark:hover:bg-white/5"
-                }`}
+                className={`w-full flex items-center justify-between px-5 py-3 text-sm text-left transition cursor-pointer ${batch.batch_id === batchId ? "bg-orange-50 dark:bg-orange-500/10" : "hover:bg-slate-50 dark:hover:bg-white/5"
+                  }`}
               >
                 <div>
                   <div className="font-mono text-xs text-slate-400">{batch.batch_id.slice(0, 8)}</div>
@@ -602,9 +660,8 @@ export default function WatermarkManagementPage() {
           <button
             onClick={handleRestoreAll}
             disabled={restoringAll}
-            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer mt-3 ${
-              confirmRestoreAll ? "bg-red-600 hover:bg-red-700 shadow-red-600/20" : "bg-slate-700 hover:bg-slate-800 shadow-slate-700/20"
-            }`}
+            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-white shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer mt-3 ${confirmRestoreAll ? "bg-red-600 hover:bg-red-700 shadow-red-600/20" : "bg-slate-700 hover:bg-slate-800 shadow-slate-700/20"
+              }`}
           >
             {restoringAll ? <LoaderIcon /> : null}
             {confirmRestoreAll ? "Click again to confirm — Restore ALL Products" : "Restore All Product Images"}
